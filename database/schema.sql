@@ -1,8 +1,8 @@
--- Creación de la base de datos (por si no está creada en phpMyAdmin)
+
 CREATE DATABASE IF NOT EXISTS sinfoni_db;
 USE sinfoni_db;
 
--- 1. TABLA: USUARIOS (Soporta Autenticación y los 3 Roles del Sistema)
+-- TABLA: USUARIOS 
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cedula VARCHAR(20) UNIQUE NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE usuarios (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. TABLA: CONVOCATORIAS (Módulo del Administrador - RF-01, RF-02, RF-03)
+-- TABLA: CONVOCATORIAS 
 CREATE TABLE convocatorias (
     id INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(255) NOT NULL,
@@ -24,13 +24,13 @@ CREATE TABLE convocatorias (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. TABLA: SEDES (Catálogo Normalizado - RF-05)
+--  TABLA: SEDES 
 CREATE TABLE sedes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre_sede VARCHAR(100) NOT NULL
 );
 
--- 4. TABLA: SOLICITUDES (Núcleo del Formulario y Ciclo de Vida - RF-04 a RF-10)
+-- TABLA: SOLICITUDES 
 CREATE TABLE solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE solicitudes (
     FOREIGN KEY (sede_id) REFERENCES sedes(id) ON DELETE RESTRICT
 );
 
--- 5. TABLA: ASIGNACION_EVALUACIONES (Módulo del Evaluador Externo - Requerimiento Dra. Nelly)
+-- ASIGNACION_EVALUACIONES 
 CREATE TABLE asignacion_evaluaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
