@@ -1,8 +1,13 @@
-
 CREATE DATABASE IF NOT EXISTS sinfoni_db;
 USE sinfoni_db;
 
--- TABLA: USUARIOS 
+-- 1. TABLA: SEDES (Independiente)
+CREATE TABLE sedes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_sede VARCHAR(100) NOT NULL
+);
+
+-- 2. TABLA: USUARIOS (Independiente)
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cedula VARCHAR(20) UNIQUE NOT NULL,
@@ -13,7 +18,7 @@ CREATE TABLE usuarios (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- TABLA: CONVOCATORIAS 
+-- 3. TABLA: CONVOCATORIAS (Independiente)
 CREATE TABLE convocatorias (
     id INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(255) NOT NULL,
@@ -24,13 +29,7 @@ CREATE TABLE convocatorias (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
---  TABLA: SEDES 
-CREATE TABLE sedes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_sede VARCHAR(100) NOT NULL
-);
-
--- TABLA: SOLICITUDES 
+-- 4. TABLA: SOLICITUDES (Depende de usuarios, convocatorias y sedes)
 CREATE TABLE solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -48,24 +47,26 @@ CREATE TABLE solicitudes (
     FOREIGN KEY (sede_id) REFERENCES sedes(id) ON DELETE RESTRICT
 );
 
--- ASIGNACION_EVALUACIONES 
+-- 5. TABLA: ASIGNACION_EVALUACIONES (Depende de solicitudes y usuarios)
 CREATE TABLE asignacion_evaluaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
     evaluador_id INT NOT NULL,
-    calificacion DECIMAL(3,2) NULL, -- Permite notas tipo 4.50
+    puntaje DECIMAL(5,2) DEFAULT 0.00, -- Corregido a 'puntaje' para conectar con Node
     comentarios TEXT NULL,
     fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE,
-    FOREIGN KEY (evaluador_id) REFERENCES usuarios(id) ON DELETE RESTRICT
+    FOREIGN KEY (evaluador_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
+-- ========================================================
+-- INSERCIÓN DE DATOS INICIALES
+-- ========================================================
 
 INSERT INTO sedes (nombre_sede) VALUES 
 ('Pereira'), 
 ('Ibagué'), 
 ('Bogotá');
-
 
 INSERT INTO convocatorias (titulo, tipo, fecha_inicio, fecha_cierre, bases_url) VALUES 
 ('Recursos de Reposición Convocatorias Internas de Investigación 2026-1', 'General', '2026-06-01 00:00:00', '2026-07-24 23:59:59', '/uploads/bases_2026_1.pdf');

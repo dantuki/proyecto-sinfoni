@@ -4,10 +4,11 @@ const dotenv = require('dotenv');
 const db = require('./config/db');
 
 // IMPORTACIÓN DE RUTAS (Módulos del Sistema SINFONI)
-const sedeRoutes = require('./routes/sedeRoutes'); 
+const sedeRoutes = require('./routes/sedeRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
 const convocatoriaRoutes = require('./routes/convocatoriaRoutes');
-const solicitudRoutes = require('./routes/solicitudRoutes'); // <-- NUEVO: Rutas de Solicitudes
+const solicitudRoutes = require('./routes/solicitudRoutes');
+const asignacionRoutes = require('./routes/asignacionRoutes'); // Nuevo módulo integrado
 
 dotenv.config();
 const app = express();
@@ -16,16 +17,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// VERIFICACIÓN ASÍNCRONA DE CONEXIÓN CON MYSQL (Socket 127.0.0.1:3306)
+// VERIFICACIÓN ASÍNCRONA DE CONEXIÓN CON MYSQL
 db.query('SELECT 1')
-    .then(() => console.log('Conexión exitosa'))
+    .then(() => console.log('Conexión exitosa con el motor MySQL'))
     .catch(err => console.error('Error en la base de datos:', err));
 
 // MONTAJE DE LAS RUTAS DE LA API (Prefijos REST)
-app.use('/api/sedes', sedeRoutes); 
+app.use('/api/sedes', sedeRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/convocatorias', convocatoriaRoutes);
-app.use('/api/solicitudes', solicitudRoutes); // <-- NUEVO: Prefijo para el CRUD de Solicitudes (Proyectos)
+app.use('/api/solicitudes', solicitudRoutes);
+app.use('/api/asignaciones', asignacionRoutes); // Montaje del nuevo endpoint
 
 // RUTA DE CONFIGURACIÓN / PRUEBA DE DISPONIBILIDAD
 app.get('/', (req, res) => {
