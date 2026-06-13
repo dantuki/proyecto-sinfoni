@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const usuarioController = require('../controllers/usuarioController');
+const ctrl = require('../controllers/usuarioController');
 
-router.get('/', usuarioController.getUsuarios);             // GET general (Listar)
-router.get('/:id', usuarioController.getUsuarioPerfil);     // GET específico (Info)
-router.post('/registro', usuarioController.registrarUsuario); // POST (Agregar)
-router.put('/:id', usuarioController.updateUsuario);        // PUT (Update)
-router.delete('/:id', usuarioController.deleteUsuario);     // DELETE (Borrar)
+router.get('/', ctrl.getUsuarios);
+router.get('/:id', ctrl.getUsuarioById);
+router.post('/registro', ctrl.registrarUsuario);
+router.put('/:id', ctrl.updateUsuario);
+router.delete('/:id', ctrl.deleteUsuario);
+router.delete('/mantenimiento/purgar-todo', ctrl.limpiarTablaDesarrollo);
 
 module.exports = router;

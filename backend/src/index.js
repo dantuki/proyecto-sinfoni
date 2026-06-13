@@ -6,8 +6,8 @@ const db = require('./config/db');
 // IMPORTACIÓN DE RUTAS (Módulos del Sistema SINFONI)
 const sedeRoutes = require('./routes/sedeRoutes'); 
 const usuarioRoutes = require('./routes/usuarioRoutes');
-const { getConvocatorias } = require('./controllers/convocatoriaController');
-const convocatoriaRoutes = require('./routes/convocatoriaRoutes'); // <-- NUEVO: Rutas de Convocatorias
+const convocatoriaRoutes = require('./routes/convocatoriaRoutes');
+const solicitudRoutes = require('./routes/solicitudRoutes'); // <-- NUEVO: Rutas de Solicitudes
 
 dotenv.config();
 const app = express();
@@ -24,7 +24,8 @@ db.query('SELECT 1')
 // MONTAJE DE LAS RUTAS DE LA API (Prefijos REST)
 app.use('/api/sedes', sedeRoutes); 
 app.use('/api/usuarios', usuarioRoutes);
-app.use('/api/convocatorias', convocatoriaRoutes); // <-- NUEVO: Prefijo para el CRUD de Convocatorias
+app.use('/api/convocatorias', convocatoriaRoutes);
+app.use('/api/solicitudes', solicitudRoutes); // <-- NUEVO: Prefijo para el CRUD de Solicitudes (Proyectos)
 
 // RUTA DE CONFIGURACIÓN / PRUEBA DE DISPONIBILIDAD
 app.get('/', (req, res) => {

@@ -1,51 +1,39 @@
 const db = require('../config/db');
 
 const Usuario = {
-    // 1. GET: Consultar todos los usuarios registrados
     getAll: async () => {
         const [rows] = await db.query('SELECT id, cedula, nombre_completo, email, rol, created_at FROM usuarios');
         return rows;
     },
-
-    // 2. INFO: Obtener un usuario por su ID (Ya lo tenías)
     getById: async (id) => {
         const [rows] = await db.query('SELECT id, cedula, nombre_completo, email, rol, created_at FROM usuarios WHERE id = ?', [id]);
         return rows[0];
     },
-
-    // 3. ADD: Registrar un nuevo usuario (Ya lo tenías)
-    create: async (usuarioData) => {
-        const { cedula, nombre_completo, email, password, rol } = usuarioData;
+    create: async (data) => {
         const [result] = await db.query(
             'INSERT INTO usuarios (cedula, nombre_completo, email, password, rol) VALUES (?, ?, ?, ?, ?)',
-            [cedula, nombre_completo, email, password, rol || 'Profesor']
+            [data.cedula, data.nombre_completo, data.email, data.password, data.rol || 'Profesor']
         );
         return result.insertId;
     },
-
-    // 4. UPDATE: Modificar los datos de un usuario existente
-    update: async (id, usuarioData) => {
-        const { cedula, nombre_completo, email, rol } = usuarioData;
+    update: async (id, data) => {
         const [result] = await db.query(
             'UPDATE usuarios SET cedula = ?, nombre_completo = ?, email = ?, rol = ? WHERE id = ?',
-            [cedula, nombre_completo, email, rol, id]
+            [data.cedula, data.nombre_completo, data.email, data.rol, id]
         );
-        return result.affectedRows; // Retorna cuántas filas se actualizaron
+        return result.affectedRows;
     },
-
-    // 5. DELETE: Eliminar un usuario por su ID
     delete: async (id) => {
         const [result] = await db.query('DELETE FROM usuarios WHERE id = ?', [id]);
-        return result.affectedRows; // Retorna cuántas filas se eliminaron
+        return result.affectedRows;
     },
-
-    // Métodos de apoyo para validaciones
-    getByEmail: async (email) => {
-        const [rows] = await db.query('SELECT * FROM usuarios WHERE email = ?', [email]);
-        return rows[0];
+    truncate: async () => {
+        await db.query('SET FOREIGN_KEY_CHECKS = 0');
+        await db.query('TRUNCATE TABLE usuarios');
+        await db.query('SET FOREIGN_KEY_CHECKS = 1');
     },
     getByCedula: async (cedula) => {
-        const [rows] = await db.query('SELECT * FROM usuarios WHERE cedula = ?', [cedula]);
+        const [rows] = await db.query('SELECT id FROM usuarios WHERE cedula = ?', [cedula]);
         return rows[0];
     }
 };
