@@ -2,24 +2,31 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const db = require('./config/db');
-const sedeRoutes = require('./routes/sedeRoutes'); // Importar rutas de sedes
+
+// IMPORTACIÓN DE RUTAS (Módulos del Sistema SINFONI)
+const sedeRoutes = require('./routes/sedeRoutes'); 
+const usuarioRoutes = require('./routes/usuarioRoutes');
+const { getConvocatorias } = require('./controllers/convocatoriaController');
+const convocatoriaRoutes = require('./routes/convocatoriaRoutes'); // <-- NUEVO: Rutas de Convocatorias
 
 dotenv.config();
-
 const app = express();
 
+// MIDDLEWARES CORE
 app.use(cors());
 app.use(express.json());
 
-// Probar la conexion directamente en la consola
+// VERIFICACIÓN ASÍNCRONA DE CONEXIÓN CON MYSQL (Socket 127.0.0.1:3306)
 db.query('SELECT 1')
     .then(() => console.log('Conexión exitosa'))
-    .catch(err => console.error('Error', err));
+    .catch(err => console.error('Error en la base de datos:', err));
 
-// Rutas de los modulos
-app.use('/api/sedes', sedeRoutes); // Enlazar el prefijo /api/sedes
+// MONTAJE DE LAS RUTAS DE LA API (Prefijos REST)
+app.use('/api/sedes', sedeRoutes); 
+app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/convocatorias', convocatoriaRoutes); // <-- NUEVO: Prefijo para el CRUD de Convocatorias
 
-// Ruta de prueba
+// RUTA DE CONFIGURACIÓN / PRUEBA DE DISPONIBILIDAD
 app.get('/', (req, res) => {
     res.json({
         mensaje: "API de SINFONI corriendo correctamente",
@@ -28,6 +35,7 @@ app.get('/', (req, res) => {
     });
 });
 
+// ESCUCHA DEL SERVIDOR LOCAL
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

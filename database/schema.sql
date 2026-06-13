@@ -6,7 +6,7 @@ USE sinfoni_db;
 CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cedula VARCHAR(20) UNIQUE NOT NULL,
-    nombre_completo VARCHAR(150) NOT NULL,
+    nombre_completo VARCHAR(150) NOT NULL,    
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     rol ENUM('Admin', 'Profesor', 'Evaluador') DEFAULT 'Profesor',
