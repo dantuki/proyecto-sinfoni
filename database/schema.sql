@@ -1,6 +1,17 @@
 CREATE DATABASE IF NOT EXISTS sinfoni_db;
 USE sinfoni_db;
 
+-- ELIMINACIÓN DE TABLAS PREVIAS (En orden inverso por llaves foráneas para evitar bloqueos)
+DROP TABLE IF EXISTS asignacion_evaluaciones;
+DROP TABLE IF EXISTS solicitudes;
+DROP TABLE IF EXISTS convocatorias;
+DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS sedes;
+
+-- ========================================================
+-- CREACIÓN DE ESTRUCTURAS LIMPIAS
+-- ========================================================
+
 -- 1. TABLA: SEDES (Independiente)
 CREATE TABLE sedes (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -52,7 +63,7 @@ CREATE TABLE asignacion_evaluaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
     evaluador_id INT NOT NULL,
-    puntaje DECIMAL(5,2) DEFAULT 0.00, -- Corregido a 'puntaje' para conectar con Node
+    puntaje DECIMAL(5,2) DEFAULT 0.00, -- Columna unificada como 'puntaje'
     comentarios TEXT NULL,
     fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE,
