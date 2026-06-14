@@ -2,6 +2,7 @@ CREATE DATABASE IF NOT EXISTS sinfoni_db;
 USE sinfoni_db;
 
 -- ELIMINACIÓN DE TABLAS PREVIAS (En orden inverso por llaves foráneas para evitar bloqueos)
+DROP TABLE IF EXISTS trazabilidad_solicitudes;
 DROP TABLE IF EXISTS asignacion_evaluaciones;
 DROP TABLE IF EXISTS solicitudes;
 DROP TABLE IF EXISTS convocatorias;
@@ -41,6 +42,7 @@ CREATE TABLE convocatorias (
 );
 
 -- 4. TABLA: SOLICITUDES (Depende de usuarios, convocatorias y sedes)
+-- Se expandieron los estados para soportar el ciclo de vida académico de la UCC
 CREATE TABLE solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -48,7 +50,7 @@ CREATE TABLE solicitudes (
     sede_id INT NOT NULL,
     num_solicitud VARCHAR(50) NOT NULL,
     observaciones TEXT NULL, -- Controlado a 8000 caracteres en la aplicación
-    estado ENUM('Borrador', 'Presentado') DEFAULT 'Borrador',
+    estado ENUM('Borrador', 'Presentado', 'En Evaluacion', 'Aprobado', 'Rechazado') DEFAULT 'Borrador',
     doc_par_1 VARCHAR(255) NULL, -- Obligatorio solo al 'Finalizar'
     doc_par_2 VARCHAR(255) NULL, -- Opcional
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -59,15 +61,30 @@ CREATE TABLE solicitudes (
 );
 
 -- 5. TABLA: ASIGNACION_EVALUACIONES (Depende de solicitudes y usuarios)
+-- Se añade el estado de la evaluación para saber si está en borrador o finalizada
 CREATE TABLE asignacion_evaluaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
     evaluador_id INT NOT NULL,
-    puntaje DECIMAL(5,2) DEFAULT 0.00, -- Columna unificada como 'puntaje'
+    puntaje DECIMAL(5,2) DEFAULT 0.00,
     comentarios TEXT NULL,
+    estado_evaluacion ENUM('Asignado', 'En Progreso', 'Finalizado') DEFAULT 'Asignado',
     fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE,
     FOREIGN KEY (evaluador_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- 6. TABLA: TRAZABILIDAD_SOLICITUDES (Nueva: Tabla de Auditoría e Historial de Cambios)
+CREATE TABLE trazabilidad_solicitudes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    solicitud_id INT NOT NULL,
+    usuario_id INT NOT NULL, -- Quién ejecuta el cambio de estado
+    estado_anterior VARCHAR(50) NULL,
+    estado_nuevo VARCHAR(50) NOT NULL,
+    motivo_cambio TEXT NULL, -- Justificación si es rechazada o devuelta
+    fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT
 );
 
 -- ========================================================
