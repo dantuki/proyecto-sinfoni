@@ -10,10 +10,10 @@ const Asignacion = {
     // 2. Obtener una asignación por su ID específico (Info)
     getById: async (id) => {
         const [rows] = await db.query('SELECT * FROM asignacion_evaluaciones WHERE id = ?', [id]);
-        return rows[0]; // Retorna el primer registro encontrado o undefined
+        return rows[0]; 
     },
 
-    // 3. Crear una nueva asignación
+    // 3. Crear una nueva asignación (estado_evaluacion toma 'Asignado' por defecto en el SQL)
     create: async (data) => {
         const { solicitud_id, evaluador_id } = data;
         const [result] = await db.query(
@@ -23,11 +23,13 @@ const Asignacion = {
         return result.insertId;
     },
 
-    // 4. Actualizar puntaje y comentarios (Calificar)
+    // 4. Actualizar puntaje, comentarios y actualizar estado a 'Finalizado' (Calificar)
     updateEvaluacion: async (id, data) => {
         const { puntaje, comentarios } = data;
         const [result] = await db.query(
-            'UPDATE asignacion_evaluaciones SET puntaje = ?, comentarios = ? WHERE id = ?',
+            `UPDATE asignacion_evaluaciones 
+             SET puntaje = ?, comentarios = ?, estado_evaluacion = 'Finalizado' 
+             WHERE id = ?`,
             [puntaje, comentarios, id]
         );
         return result.affectedRows;

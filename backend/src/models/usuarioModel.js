@@ -35,7 +35,12 @@ const Usuario = {
     getByCedula: async (cedula) => {
         const [rows] = await db.query('SELECT id FROM usuarios WHERE cedula = ?', [cedula]);
         return rows[0];
-    }
+    },
+    // Obtener usuario por email (Para el Login)
+    getByEmail: async (email) => {
+        const [rows] = await db.query('SELECT * FROM usuarios WHERE email = ?', [email]);
+        return rows[0];
+    },
 };
 
 module.exports = Usuario;
