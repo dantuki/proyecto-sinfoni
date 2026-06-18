@@ -17,6 +17,7 @@ const app = express();
 // MIDDLEWARES CORE
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 
 // VERIFICACIÓN ASÍNCRONA DE CONEXIÓN CON MYSQL
 db.query('SELECT 1')
