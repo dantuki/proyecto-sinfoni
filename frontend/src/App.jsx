@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useMsal } from '@azure/msal-react'; // Hook oficial para manejar la sesión de Microsoft
 import Login from './components/Login';
 import InicioCards from './components/InicioCards';
 import DatosPersonales from './components/DatosPersonales';
@@ -7,7 +6,7 @@ import Noticias from './components/Noticias';
 import FormularioSolicitud from './components/FormularioSolicitud';
 
 function App() {
-  const { instance } = useMsal(); // Instancia de MSAL para interactuar con Azure AD
+  // Estado local para guardar el usuario logueado con su rol
   const [usuario, setUsuario] = useState(null); 
   const [vistaActual, setVistaActual] = useState('inicio');
 
@@ -19,13 +18,13 @@ function App() {
   const renderizarVista = () => {
     switch(vistaActual) {
       case 'inicio':
-        return <InicioCards cambiarVista={setVistaActual} />;
+        return <InicioCards cambiarVista={setVistaActual} usuario={usuario} />;
       case 'datos_personales':
-        return <DatosPersonales />;
+        return <DatosPersonales usuario={usuario} />;
       case 'noticias':
-        return <Noticias />;
+        return <Noticias usuario={usuario} />;
       case 'formulario':
-        return <FormularioSolicitud />;
+        return <FormularioSolicitud usuario={usuario} />;
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -79,15 +78,10 @@ function App() {
           <div className="flex items-center gap-4">
             <div className="text-sm font-bold text-slate-700 uppercase">{usuario.nombre}</div>
             <button 
-              onClick={async () => { 
+              onClick={() => { 
                 setUsuario(null); 
                 setVistaActual('inicio');
-                try {
-                  // Desconecta la cuenta del entorno de Microsoft mediante una ventana emergente limpia
-                  await instance.logoutPopup();
-                } catch (err) {
-                  console.error("Error al revocar la sesión de Microsoft:", err);
-                }
+                // Limpieza absoluta de Microsoft: ya no intentamos logoutPopup()
               }}
               className="text-xs bg-slate-200 hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors text-slate-600"
             >
