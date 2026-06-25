@@ -1,340 +1,362 @@
 import React, { useState } from 'react';
-import fondoS from '../assets/fondoS.png';
 
 export default function Login({ alAutenticar }) {
-  // Manejo de vistas: 'login' | 'register' | 'forgot'
+  // Manejo de estados de la interfaz: 'login' | 'register' | 'forgot'
   const [vista, setVista] = useState('login');
-  
-  // Estados de los formularios
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [captchaVerificado, setCaptchaVerificado] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [mensajeExito, setMensajeExito] = useState('');
+
+  // Formulario unificado adaptado a tu esquema SQL (sinfoni_db)
   const [formData, setFormData] = useState({
     cedula: '',
     nombre_completo: '',
     email: '',
     password: '',
     confirmPassword: '',
-    rol: 'Profesor' // Valor por defecto del ENUM en tu SQL
+    rol: 'Profesor' // Valor por defecto en la base de datos
   });
 
-  const [captchaVerificado, setCaptchaVerificado] = useState(false);
-  const [error, setError] = useState('');
-  const [mensajeExito, setMensajeExito] = useState('');
-
-  // Manejar cambios en los inputs
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
 
-  // Validaciones comunes de Frontend
   const validarEmail = (email) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const ejecutarValidaciones = (tipo) => {
+  const procesarValidacion = (tipo) => {
     if (!validarEmail(formData.email)) {
-      setError('Por favor, ingresa un correo electrónico válido.');
+      setError('Escribe una dirección de correo electrónico institucional válida.');
       return false;
     }
-
     if (!captchaVerificado) {
-      setError('Por favor, completa la verificación "No soy un robot".');
+      setError('La verificación de seguridad anti-bots es obligatoria.');
       return false;
     }
-
     if (tipo === 'register') {
       if (!formData.cedula || !formData.nombre_completo) {
-        setError('Todos los campos son obligatorios.');
+        setError('Todos los campos de identidad son requeridos.');
         return false;
       }
       if (formData.password.length < 6) {
-        setError('La contraseña debe tener al menos 6 caracteres.');
+        setError('Por seguridad, la contraseña debe contener al menos 6 caracteres.');
         return false;
       }
       if (formData.password !== formData.confirmPassword) {
-        setError('Las contraseñas no coinciden.');
+        setError('La confirmación no coincide con la contraseña ingresada.');
         return false;
       }
     }
-
     if (tipo === 'login' && !formData.password) {
-      setError('La contraseña es obligatoria.');
+      setError('La contraseña de acceso es requerida.');
       return false;
     }
-
     return true;
   };
 
-  // Procesar el Inicio de Sesión
-  const handleSubmitLogin = (e) => {
+  const ejecutarSubmitLogin = (e) => {
     e.preventDefault();
-    if (!ejecutarValidaciones('login')) return;
+    if (!procesarValidacion('login')) return;
 
-    // Aquí conectarás tu fetch/axios al backend
-    console.log("Enviando login al backend...", { email: formData.email, password: formData.password });
-    
-    // Simulación de respuesta exitosa del backend
-    const usuarioSimulado = {
-      nombre: "Usuario Autenticado",
-      correo: formData.email,
-      rol: "Admin", 
-      token: "jwt-token-generado-por-backend"
-    };
-    alAutenticar(usuarioSimulado);
-  };
-
-  // Procesar el Registro de Usuario
-  const handleSubmitRegister = (e) => {
-    e.preventDefault();
-    if (!ejecutarValidaciones('register')) return;
-
-    // Aquí conectarás el POST a tu API (/api/register)
-    console.log("Registrando usuario en la base de datos...", formData);
-    
-    setMensajeExito('¡Registro exitoso! Ya puedes iniciar sesión.');
+    setLoading(true);
+    // Simulación de latencia de red para mostrar el estado de carga profesional
     setTimeout(() => {
-      setMensajeExito('');
-      setVista('login');
-      setCaptchaVerificado(false);
-    }, 2500);
+      setLoading(false);
+      const autenticacionCorrecta = {
+        nombre: formData.email.split('@')[0].toUpperCase(),
+        correo: formData.email,
+        rol: 'Admin', // Simulación de rol retornado por la base de datos
+        token: 'session_jwt_secure_token_2026'
+      };
+      alAutenticar(autenticacionCorrecta);
+    }, 1200);
   };
 
-  // Procesar Recuperación de Contraseña
-  const handleSubmitForgot = (e) => {
+  const ejecutarSubmitRegister = (e) => {
+    e.preventDefault();
+    if (!procesarValidacion('register')) return;
+
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setMensajeExito('Registro procesado correctamente. Cuenta creada en sinfoni_db.');
+      setTimeout(() => {
+        setMensajeExito('');
+        setVista('login');
+        setCaptchaVerificado(false);
+      }, 2000);
+    }, 1200);
+  };
+
+  const ejecutarSubmitForgot = (e) => {
     e.preventDefault();
     if (!validarEmail(formData.email)) {
-      setError('Ingresa un correo válido.');
-      return false;
+      setError('Ingresa un correo válido para buscar la cuenta.');
+      return;
     }
     if (!captchaVerificado) {
-      setError('Completa la verificación de seguridad.');
-      return false;
+      setError('Por favor confirma que no eres un robot.');
+      return;
     }
 
-    console.log("Solicitando enlace de recuperación para:", formData.email);
-    setMensajeExito('Se ha enviado un enlace de restauración a tu Gmail.');
+    setLoading(true);
     setTimeout(() => {
-      setMensajeExito('');
-      setVista('login');
-      setCaptchaVerificado(false);
-    }, 4000);
+      setLoading(false);
+      setMensajeExito('Se ha enviado un token criptográfico de restauración a tu Gmail.');
+      setTimeout(() => {
+        setMensajeExito('');
+        setVista('login');
+        setCaptchaVerificado(false);
+      }, 3500);
+    }, 1000);
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-slate-900 overflow-hidden font-sans">
+    <div className="min-h-screen w-full bg-white flex text-slate-900 font-sans antialiased">
       
-      {/* Imagen de fondo controlada mediante assets */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src={fondoS} 
-          alt="Background" 
-          className="w-full h-full object-cover opacity-30 filter blur-xs scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900/85 to-transparent" />
-      </div>
-
-      {/* Tarjeta Contenedora Principal */}
-      <div className="relative z-10 w-full max-w-4xl mx-4 bg-slate-950/80 backdrop-blur-xl rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col md:flex-row transition-all duration-300 min-h-[550px]">
+      {/* COLUMNA IZQUIERDA: Formulario de Autenticación */}
+      <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 sm:p-12 md:p-16 bg-white z-10 shadow-2xl lg:shadow-none">
         
-        {/* Panel Izquierdo: Branding Corporativo */}
-        <div className="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-800 bg-gradient-to-b from-slate-900/40 to-transparent">
-          <div>
-            <div className="flex items-center gap-2 mb-6">
-              <span className="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-                ARCHIVE<span className="text-emerald-400">X</span>
-              </span>
+        {/* Encabezado / Identidad de la Marca */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 group cursor-pointer">
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center shadow-md shadow-blue-500/20 transition-transform group-hover:scale-105">
+              <span className="text-white font-black text-lg tracking-tighter">A</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-white tracking-tight leading-tight">
-              Sistema de Gestión Documental
-            </h1>
-            <p className="mt-3 text-sm text-slate-400 max-w-sm">
-              Plataforma institucional para el control, auditoría y trazabilidad de solicitudes académicas y convocatorias de investigación.
-            </p>
-          </div>
-          
-          <div className="mt-8 md:mt-0">
-            <p className="text-xs text-slate-500">
-              Desarrollado para <span className="text-slate-300 font-semibold">SINFONI</span> &copy; 2026
-            </p>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tight text-slate-900">
+                ARCHIVE<span className="text-emerald-500 font-extrabold">X</span>
+              </span>
+              <span className="text-[9px] text-slate-400 font-medium tracking-wider -mt-1 uppercase">SaaS Enterprise</span>
+            </div>
           </div>
         </div>
 
-        {/* Panel Derecho: Formularios Dinámicos */}
-        <div className="w-full md:w-1/2 p-8 lg:p-12 flex flex-col justify-center">
+        {/* Contenedor Central de Formularios con Ancho Controlado */}
+        <div className="w-full max-w-md mx-auto my-auto py-12">
           
-          {/* Alertas de error o éxito */}
-          {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl">{error}</div>}
-          {mensajeExito && <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs rounded-xl">{mensajeExito}</div>}
+          {/* Feedback Visual de Alertas */}
+          {error && (
+            <div className="mb-6 p-3.5 bg-red-50 text-red-700 text-xs font-medium rounded-xl border border-red-100 flex items-center gap-2 animate-fade-in">
+              <span className="text-sm">⚠️</span> {error}
+            </div>
+          )}
+          {mensajeExito && (
+            <div className="mb-6 p-3.5 bg-emerald-50 text-emerald-800 text-xs font-medium rounded-xl border border-emerald-100 flex items-center gap-2 animate-fade-in">
+              <span className="text-sm">✨</span> {mensajeExito}
+            </div>
+          )}
 
           {/* ================= VISTA: INICIAR SESIÓN ================= */}
           {vista === 'login' && (
-            <form onSubmit={handleSubmitLogin} className="space-y-4">
+            <form onSubmit={ejecutarSubmitLogin} className="space-y-5">
               <div>
-                <h2 className="text-xl font-bold text-white">Bienvenido</h2>
-                <p className="text-xs text-slate-400 mt-1">Ingresa tus credenciales para acceder al sistema</p>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Autenticación</h2>
+                <p className="text-xs text-slate-500 mt-2">
+                  Introduce tus credenciales institucionales para ingresar a la plataforma corporativa.
+                </p>
               </div>
 
-              <div className="space-y-3">
-                <input 
-                  type="email" 
-                  name="email"
-                  placeholder="Correo institucional" 
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-                  required
-                />
-                <input 
-                  type="password" 
-                  name="password"
-                  placeholder="Contraseña" 
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors"
-                  required
-                />
+              <div className="space-y-3.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Correo Corporativo</label>
+                  <input 
+                    type="email" 
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="ejemplo@sinfoni.com" 
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-600/5 transition-all placeholder-slate-400 font-medium"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Contraseña</label>
+                    <button 
+                      type="button" 
+                      onClick={() => { setVista('forgot'); setError(''); }}
+                      className="text-xs text-blue-600 font-medium hover:text-blue-700 transition-colors"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input 
+                      type={mostrarPassword ? "text" : "password"} 
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="••••••••" 
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white focus:ring-4 focus:ring-blue-600/5 transition-all placeholder-slate-400 font-mono tracking-widest"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarPassword(!mostrarPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-xs font-medium"
+                    >
+                      {mostrarPassword ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-right">
-                <button 
-                  type="button" 
-                  onClick={() => { setVista('forgot'); setError(''); }} 
-                  className="text-xs text-cyan-400 hover:underline bg-transparent border-none cursor-pointer"
-                >
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-
-              {/* Módulo CAPTCHA */}
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between">
-                <label className="flex items-center gap-3 cursor-pointer text-slate-300 text-xs">
+              {/* Módulo CAPTCHA Premium */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between transition-all hover:bg-slate-50/50">
+                <label className="flex items-center gap-3 cursor-pointer text-slate-700 text-xs font-medium select-none">
                   <input 
                     type="checkbox" 
                     checked={captchaVerificado}
                     onChange={(e) => setCaptchaVerificado(e.target.checked)}
-                    className="w-4 h-4 accent-cyan-500 rounded border-slate-700 bg-slate-800"
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 bg-white transition-all cursor-pointer"
                   />
                   <span>No soy un robot</span>
                 </label>
-                <div className="flex flex-col items-center">
-                  <span className="text-[9px] text-slate-500 font-bold tracking-widest">reCAPTCHA</span>
-                  <span className="text-[7px] text-slate-600">Privacidad - Términos</span>
+                <div className="flex flex-col items-end opacity-60">
+                  <span className="text-[9px] text-slate-600 font-black tracking-widest">reCAPTCHA</span>
+                  <span className="text-[7px] text-slate-500">Security Privacy</span>
                 </div>
               </div>
 
               <button 
                 type="submit"
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all duration-200"
+                disabled={loading}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-slate-900/10 transition-all active:scale-[0.99] flex items-center justify-center gap-2 text-sm disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Iniciar Sesión
+                {loading ? (
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : "Acceder al Sistema"}
               </button>
 
-              <p className="text-center text-xs text-slate-400 mt-4">
-                ¿No tienes cuenta?{' '}
-                <button type="button" onClick={() => { setVista('register'); setError(''); }} className="text-cyan-400 font-semibold hover:underline">
-                  Regístrate aquí
+              <p className="text-center text-xs text-slate-500 pt-2">
+                ¿No tienes credenciales asignadas?{' '}
+                <button type="button" onClick={() => { setVista('register'); setError(''); }} className="text-blue-600 font-semibold hover:underline">
+                  Solicita una cuenta
                 </button>
               </p>
             </form>
           )}
 
-          {/* ================= VISTA: REGISTRO ================= */}
+          {/* ================= VISTA: REGISTRO SOLICITUD ================= */}
           {vista === 'register' && (
-            <form onSubmit={handleSubmitRegister} className="space-y-3">
+            <form onSubmit={ejecutarSubmitRegister} className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-white">Crear Cuenta</h2>
-                <p className="text-xs text-slate-400 mt-1">Registra tus datos de usuario en la plataforma</p>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Formulario de Registro</h2>
+                <p className="text-xs text-slate-500 mt-2">Ingresa tu información técnica para darte de alta en el sistema.</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Documento / Cédula</label>
+                  <input 
+                    type="text" 
+                    name="cedula"
+                    value={formData.cedula}
+                    onChange={handleChange}
+                    placeholder="1088......" 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-blue-600 focus:bg-white"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Rol Institucional</label>
+                  <select 
+                    name="rol"
+                    value={formData.rol}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-blue-600 focus:bg-white cursor-pointer font-medium"
+                  >
+                    <option value="Profesor">Profesor / Investigador</option>
+                    <option value="Evaluador">Evaluador Externo</option>
+                    <option value="Admin">Administrador General</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Nombre Completo</label>
                 <input 
                   type="text" 
-                  name="cedula"
-                  placeholder="Cédula" 
-                  value={formData.cedula}
+                  name="nombre_completo"
+                  value={formData.nombre_completo}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                  required
-                />
-                <select 
-                  name="rol"
-                  value={formData.rol}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-xs focus:outline-none focus:border-cyan-500"
-                >
-                  <option value="Profesor">Profesor</option>
-                  <option value="Evaluador">Evaluador</option>
-                  <option value="Admin">Admin</option>
-                </select>
-              </div>
-
-              <input 
-                type="text" 
-                name="nombre_completo"
-                placeholder="Nombre Completo" 
-                value={formData.nombre_completo}
-                onChange={handleChange}
-                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                required
-              />
-
-              <input 
-                type="email" 
-                name="email"
-                placeholder="Correo Electrónico" 
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                required
-              />
-
-              <div className="grid grid-cols-2 gap-2">
-                <input 
-                  type="password" 
-                  name="password"
-                  placeholder="Contraseña" 
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                  required
-                />
-                <input 
-                  type="password" 
-                  name="confirmPassword"
-                  placeholder="Confirmar" 
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                  placeholder="Escribe tus nombres y apellidos" 
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-blue-600 focus:bg-white"
                   required
                 />
               </div>
 
-              {/* Módulo CAPTCHA */}
-              <div className="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
-                <label className="flex items-center gap-3 cursor-pointer text-slate-300">
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="usuario@sinfoni.com" 
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-blue-600 focus:bg-white"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Contraseña</label>
+                  <input 
+                    type="password" 
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Mínimo 6 carac." 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-blue-600 focus:bg-white"
+                    required
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold tracking-wider text-slate-500 uppercase">Confirmar</label>
+                  <input 
+                    type="password" 
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Repite la contraseña" 
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs focus:outline-none focus:border-blue-600 focus:bg-white"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Módulo CAPTCHA para Registro */}
+              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                <label className="flex items-center gap-3 cursor-pointer text-slate-700 font-medium">
                   <input 
                     type="checkbox" 
                     checked={captchaVerificado}
                     onChange={(e) => setCaptchaVerificado(e.target.checked)}
-                    className="w-4 h-4 accent-cyan-500 rounded border-slate-700 bg-slate-800"
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                   />
-                  <span>No soy un robot</span>
+                  <span>Verificar identidad humana</span>
                 </label>
-                <span className="text-[8px] text-slate-600 font-bold tracking-widest">reCAPTCHA</span>
+                <span className="text-[8px] text-slate-400 font-bold tracking-widest">reCAPTCHA</span>
               </div>
 
               <button 
                 type="submit"
-                className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition-all"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition-all shadow-md shadow-blue-600/10 flex items-center justify-center"
               >
-                Registrar Cuenta
+                {loading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Completar Registro Institucional"}
               </button>
 
-              <p className="text-center text-xs text-slate-400 mt-2">
-                ¿Ya tienes cuenta?{' '}
-                <button type="button" onClick={() => { setVista('login'); setError(''); }} className="text-cyan-400 font-semibold hover:underline">
+              <p className="text-center text-xs text-slate-500 mt-2">
+                ¿Ya posees una cuenta registrada?{' '}
+                <button type="button" onClick={() => { setVista('login'); setError(''); }} className="text-blue-600 font-semibold hover:underline">
                   Inicia sesión
                 </button>
               </p>
@@ -343,46 +365,49 @@ export default function Login({ alAutenticar }) {
 
           {/* ================= VISTA: RECUPERACIÓN ================= */}
           {vista === 'forgot' && (
-            <form onSubmit={handleSubmitForgot} className="space-y-4">
+            <form onSubmit={ejecutarSubmitForgot} className="space-y-5">
               <div>
-                <h2 className="text-xl font-bold text-white">Recuperar Acceso</h2>
-                <p className="text-xs text-slate-400 mt-1">Ingresa tu correo para recibir un enlace de restauración</p>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Recuperación de Cuenta</h2>
+                <p className="text-xs text-slate-500 mt-2">Introduce tu dirección de correo electrónico para buscar tu perfil en la base de datos.</p>
               </div>
 
-              <input 
-                type="email" 
-                name="email"
-                placeholder="Correo electrónico registrado" 
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-900/60 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                required
-              />
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold tracking-wider text-slate-500 uppercase">Correo de Recuperación</label>
+                <input 
+                  type="email" 
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="tu_usuario@sinfoni.com" 
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm focus:outline-none focus:border-blue-600 focus:bg-white"
+                  required
+                />
+              </div>
 
-              {/* Módulo CAPTCHA */}
-              <div className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex items-center justify-between">
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                 <label className="flex items-center gap-3 cursor-pointer text-slate-300 text-xs">
                   <input 
                     type="checkbox" 
                     checked={captchaVerificado}
                     onChange={(e) => setCaptchaVerificado(e.target.checked)}
-                    className="w-4 h-4 accent-cyan-500 rounded border-slate-700 bg-slate-800"
+                    className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500 bg-white cursor-pointer"
                   />
-                  <span>No soy un robot</span>
+                  <span className="text-slate-700 font-medium">Confirmar proceso legítimo</span>
                 </label>
-                <span className="text-[9px] text-slate-500 font-bold tracking-widest">reCAPTCHA</span>
+                <span className="text-[9px] text-slate-400 font-bold tracking-widest">reCAPTCHA</span>
               </div>
 
               <button 
                 type="submit"
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md transition-all"
+                disabled={loading}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all shadow-md flex items-center justify-center"
               >
-                Enviar Enlace a Gmail
+                {loading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Enviar Enlace Seguro"}
               </button>
 
               <div className="text-center">
-                <button type="button" onClick={() => { setVista('login'); setError(''); }} className="text-xs text-slate-400 hover:underline">
-                  Volver al Inicio de Sesión
+                <button type="button" onClick={() => { setVista('login'); setError(''); }} className="text-xs text-slate-500 font-semibold hover:text-slate-800 transition-colors">
+                  ← Volver a la pantalla de ingreso
                 </button>
               </div>
             </form>
@@ -390,7 +415,113 @@ export default function Login({ alAutenticar }) {
 
         </div>
 
+        {/* Footer Informativo de la Columna */}
+        <div className="text-xs text-slate-400 font-medium flex justify-between items-center border-t border-slate-100 pt-4">
+          <span>Infraestructura Segura (SSL)</span>
+          <span className="text-slate-300">|</span>
+          <span>Versión 2026.1</span>
+        </div>
       </div>
+
+      {/* COLUMNA DERECHA: Visual Modular de Inteligencia Documental (Oculto en móviles) */}
+      <div className="hidden lg:flex lg:w-[55%] bg-slate-950 p-12 flex-col justify-between relative overflow-hidden">
+        
+        {/* Efecto de luces ambientales abstractas de fondo */}
+        <div className="absolute top-0 right-0 h-[500px] w-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 h-[400px] w-[400px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none" />
+        
+        {/* Cuadrícula de fondo sutil */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30" />
+
+        {/* Eslogan de la Aplicación */}
+        <div className="relative z-10 max-w-md">
+          <span className="text-xs font-bold text-emerald-400 tracking-widest uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+            Plataforma Institucional
+          </span>
+          <h2 className="text-4xl font-extrabold text-white tracking-tight mt-6 leading-tight">
+            "El poder del conocimiento, en un solo lugar."
+          </h2>
+        </div>
+
+        {/* COMPONENTE INTERACTIVO DE UI EN CÓDIGO (Simulación de Gestión de Flujo Documental) */}
+        <div className="relative z-10 w-full max-w-xl mx-auto my-auto bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-6 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 bg-red-500 rounded-full" />
+              <div className="h-3 w-3 bg-yellow-500 rounded-full" />
+              <div className="h-3 w-3 bg-green-500 rounded-full" />
+              <span className="text-xs text-slate-400 font-mono ml-2">monitor_solicitudes_trazabilidad.log</span>
+            </div>
+            <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-md font-mono">
+              Live Monitor
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {/* Registro de Auditoría 1 */}
+            <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800/80 flex items-center justify-between transition-all hover:border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-sm font-bold">
+                  PDF
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-200">Propuesta_Investigacion_2026.pdf</span>
+                  <span className="text-[10px] text-slate-500">Convocatoria General • Hash Encriptado</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                  Aprobado
+                </span>
+                <span className="text-[9px] text-slate-500 block mt-1">Hace 2m</span>
+              </div>
+            </div>
+
+            {/* Registro de Auditoría 2 */}
+            <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800/80 flex items-center justify-between transition-all hover:border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-sm font-bold">
+                  DOC
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-slate-200">Recurso_Reposicion_Sede_Pereira.docx</span>
+                  <span className="text-[10px] text-slate-500">Solicitud #4829 • Auditado por Evaluador</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium">
+                  En Evaluación
+                </span>
+                <span className="text-[9px] text-slate-500 block mt-1">Hace 14m</span>
+              </div>
+            </div>
+
+            {/* Módulo de Métricas e Indicadores de Rendimiento */}
+            <div className="grid grid-cols-3 gap-3 pt-2">
+              <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 block font-medium uppercase tracking-wider">Trazabilidad Total</span>
+                <span className="text-lg font-bold text-white mt-0.5 block">99.98%</span>
+              </div>
+              <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 block font-medium uppercase tracking-wider">Solicitudes Activas</span>
+                <span className="text-lg font-bold text-blue-400 mt-0.5 block">142</span>
+              </div>
+              <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl text-center">
+                <span className="text-[10px] text-slate-500 block font-medium uppercase tracking-wider">Nodos de Auditoría</span>
+                <span className="text-lg font-bold text-emerald-400 mt-0.5 block">3 Sedes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mensaje inferior del Branding */}
+        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 font-medium">
+          <span>Sistema de Control y Gestión Documental</span>
+          <span>SINFONI Cloud Engine</span>
+        </div>
+
+      </div>
+
     </div>
   );
 }
