@@ -1,10 +1,127 @@
 import React, { useState } from 'react';
 
-export default function AuthContainer() {
+export default function AuthContainer({ alAutenticar }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [captchaChecked, setCaptchaChecked] = useState(false);
+
+  // Estados para capturar los datos de los formularios
+  const [nombreCompleto, setNombreCompleto] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // Estados para alertas y feedback
+  const [error, setError] = useState('');
+  const [mensajeExito, setMensajeExito] = useState('');
+
+  // Cambiar entre Login y Registro limpiando estados
+  const alternarVista = (v) => {
+    setIsLogin(v);
+    setCaptchaChecked(false);
+    setError('');
+    setMensajeExito('');
+    setEmail('');
+    setPassword('');
+    setNombreCompleto('');
+  };
+
+  // 1. Manejador del Login (Entrar)
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMensajeExito('');
+
+    if (!email || !password) {
+      setError('Por favor, rellena todos los campos.');
+      return;
+    }
+
+    if (!captchaChecked) {
+      setError('Por favor, marca la casilla "No soy un robot".');
+      return;
+    }
+
+    try {
+      // 🚀 CAMBIADO: Puerto corregido a 5000
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Error al iniciar sesión.');
+        return;
+      }
+
+      // Guardamos el Token en el almacenamiento local
+      localStorage.setItem('token', data.token);
+
+      // Homologamos los datos para que coincidan con lo que usa tu App.jsx
+      const usuarioFormateado = {
+        id: data.user.id,
+        nombre: data.user.nombre_completo, // Mapeado a usuario.nombre
+        email: data.user.email,
+        rol: data.user.rol === 'Admin' ? 'Administrador' : data.user.rol // Mapeado a Administrador
+      };
+
+      // Mandamos el usuario a App.jsx para darle paso al Dashboard
+      alAutenticar(usuarioFormateado);
+
+    } catch (err) {
+      setError('No se pudo conectar con el servidor. Verifica que esté encendido.');
+    }
+  };
+
+  // 2. Manejador del Registro (Crear Cuenta)
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMensajeExito('');
+
+    if (!nombreCompleto || !email || !password) {
+      setError('Todos los campos son obligatorios para el registro.');
+      return;
+    }
+
+    if (!captchaChecked) {
+      setError('Por favor, marca la casilla "No soy un robot".');
+      return;
+    }
+
+    try {
+      // 🚀 CAMBIADO: Puerto corregido a 5000
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre_completo: nombreCompleto,
+          email,
+          password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Error al crear la cuenta.');
+        return;
+      }
+
+      setMensajeExito('¡Cuenta guardada con éxito en la base de datos!');
+      
+      // Esperamos 2 segundos para que veas el mensaje y te pasamos al Login solo
+      setTimeout(() => {
+        alternarVista(true);
+      }, 2000);
+
+    } catch (err) {
+      setError('Error de red. No se pudo guardar el usuario.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-6 sm:p-10 font-sans selection:bg-blue-500 selection:text-white">
@@ -14,7 +131,7 @@ export default function AuthContainer() {
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6 transition-all duration-300">
           
           {/* Logo Corporativo */}
-          <div className="flex items-center gap-3 group cursor-pointer">
+          <div className="flex items-center gap-3 group cursor-pointer" onClick={() => alternarVista(true)}>
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center shadow-md shadow-blue-500/20 transition-transform group-hover:scale-105">
               <span className="text-white font-black text-xl tracking-tighter">A</span>
             </div>
@@ -26,10 +143,21 @@ export default function AuthContainer() {
             </div>
           </div>
 
+          {/* MENSAJES DE ALERTA O ÉXITO */}
+          {error && (
+            <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center">
+              ⚠️ {error}
+            </div>
+          )}
+          {mensajeExito && (
+            <div className="p-3 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+              🎉 {mensajeExito}
+            </div>
+          )}
+
           {/* VISTA DE LOGIN */}
           {isLogin ? (
             <div className="space-y-6 animate-fade-in">
-              {/* Encabezado */}
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Autenticación</h1>
                 <p className="text-xs text-slate-500 leading-relaxed">
@@ -37,14 +165,15 @@ export default function AuthContainer() {
                 </p>
               </div>
 
-              {/* Formulario */}
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <form className="space-y-4" onSubmit={handleLoginSubmit}>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Correo Corporativo
                   </label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="ejemplo@sinfoni.com"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
                   />
@@ -62,6 +191,8 @@ export default function AuthContainer() {
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 pr-16"
                     />
@@ -117,39 +248,35 @@ export default function AuthContainer() {
                 </button>
               </form>
 
-              {/* Toggle hacia Registro */}
               <div className="text-center pt-2">
                 <p className="text-xs text-slate-500">
                   ¿No tienes credenciales asignadas?{' '}
                   <button 
-                    onClick={() => { setIsLogin(false); setCaptchaChecked(false); }} 
+                    onClick={() => alternarVista(false)} 
                     className="font-semibold text-blue-600 hover:underline cursor-pointer"
                   >
-                    Solicita una cuenta
+                    Regístrate
                   </button>
                 </p>
               </div>
             </div>
           ) : (
             
-            /* VISTA DE REGISTRO (SOLICITAR CUENTA) */
+            /* VISTA DE REGISTRO (SOLICITAR CUENTA MODIFICADO) */
             <div className="space-y-6 animate-fade-in">
-              {/* Encabezado */}
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Solicitud de Cuenta</h1>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Completa tus datos para enviar una solicitud de acceso al administrador del sistema.
-                </p>
               </div>
 
-              {/* Formulario de Registro */}
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <form className="space-y-4" onSubmit={handleRegisterSubmit}>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Nombre Completo
                   </label>
                   <input
                     type="text"
+                    value={nombreCompleto}
+                    onChange={(e) => setNombreCompleto(e.target.value)}
                     placeholder="Juan Pérez"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
                   />
@@ -161,6 +288,8 @@ export default function AuthContainer() {
                   </label>
                   <input
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="ejemplo@sinfoni.com"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
                   />
@@ -173,6 +302,8 @@ export default function AuthContainer() {
                   <div className="relative">
                     <input
                       type={showConfirmPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 pr-16"
                     />
@@ -219,16 +350,15 @@ export default function AuthContainer() {
                   type="submit"
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition-all duration-150 shadow-sm active:scale-[0.99] mt-2"
                 >
-                  Enviar Solicitud
+                  Registrarse
                 </button>
               </form>
 
-              {/* Toggle hacia Login */}
               <div className="text-center pt-2">
                 <p className="text-xs text-slate-500">
                   ¿Ya tienes una cuenta asignada?{' '}
                   <button 
-                    onClick={() => { setIsLogin(true); setCaptchaChecked(false); }} 
+                    onClick={() => alternarVista(true)} 
                     className="font-semibold text-blue-600 hover:underline cursor-pointer"
                   >
                     Inicia sesión
