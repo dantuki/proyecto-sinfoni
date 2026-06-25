@@ -1,59 +1,22 @@
-import jwt from 'jsonwebtoken';
-import axios from 'axios';
+const jwt = require('jsonwebtoken');
 
-// MIDDLEWARE: Verificación de Token Bearer
-export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
-  }
+const verificarToken = (req, res, next) => {
+    // 1. Obtener el token del encabezado Authorization
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // El formato es "Bearer TOKEN"
 
-  const token = authHeader.split(' ')[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Token inválido o expirado.' });
-  }
-};
-
-// MIDDLEWARE: Validación Desacoplada de reCAPTCHA
-export const verifyCaptcha = async (req, res, next) => {
-  if (process.env.RECAPTCHA_ENABLED !== 'true') {
-    return next(); // Si está desactivado en el .env, pasa sin validar
-  }
-
-  const token = req.body.captchaToken;
-  if (!token) {
-    return res.status(400).json({ error: 'Validación CAPTCHA requerida.' });
-  }
-
-  try {
-    const response = await axios.post(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET}&response=${token}`
-    );
-
-    if (response.data.success) {
-      next();
-    } else {
-      return res.status(400).json({ error: 'Validación de seguridad CAPTCHA fallida.' });
+    if (!token) {
+        return res.status(401).json({ status: "error", message: "Acceso denegado: No se proporcionó token" });
     }
-  } catch (error) {
-    return res.status(500).json({ error: 'Error al verificar el CAPTCHA con el servidor de Google.' });
-  }
+
+    try {
+        // 2. Verificar el token usando la misma clave secreta del .env
+        const verified = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = verified; // Guardamos la info del usuario (id y rol) en la request
+        next(); // Si todo está bien, dejamos pasar a la ruta
+    } catch (error) {
+        res.status(403).json({ status: "error", message: "Token inválido o expirado" });
+    }
 };
 
-// MIDDLEWARE: Control de Roles Dinámico
-export const authorizeRoles = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.rol)) {
-      return res.status(403).json({ 
-        error: `Acceso restringido. Se requiere rol: [${allowedRoles.join(', ')}]. Tu rol actual es: [${req.user?.rol || 'Ninguno'}]` 
-      });
-    }
-    next();
-  };
-};
+module.exports = verificarToken;
