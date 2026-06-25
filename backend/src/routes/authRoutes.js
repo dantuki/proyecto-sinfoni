@@ -1,7 +1,12 @@
 const express = require('express');
-const router = express.Router();
-const { login } = require('../controllers/authController');
+const authController = require('../controllers/authController.js');
 
-router.post('/login', login);
+const router = express.Router();
+
+// Ruta para guardar usuarios desde la pantalla "Solicitud de Cuenta"
+router.post('/register', authController.register);
+
+// Ruta para verificar usuarios desde la pantalla "Autenticación"
+router.post('/login', authController.login);
 
 module.exports = router;

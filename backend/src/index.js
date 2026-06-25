@@ -9,7 +9,7 @@ const usuarioRoutes = require('./routes/usuarioRoutes');
 const convocatoriaRoutes = require('./routes/convocatoriaRoutes');
 const solicitudRoutes = require('./routes/solicitudRoutes');
 const asignacionRoutes = require('./routes/asignacionRoutes');
-const authRoutes = require('./routes/authRoutes'); // 👈 Nuevo módulo de Autenticación
+const authRoutes = require('./routes/authRoutes'); // Módulo de Autenticación
 
 dotenv.config();
 const app = express();
@@ -30,7 +30,7 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/convocatorias', convocatoriaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/asignaciones', asignacionRoutes);
-app.use('/api/auth', authRoutes); // 👈 Montaje del endpoint de Login
+app.use('/api/auth', authRoutes); // Montaje del endpoint de Login
 
 // RUTA DE CONFIGURACIÓN / PRUEBA DE DISPONIBILIDAD
 app.get('/', (req, res) => {
