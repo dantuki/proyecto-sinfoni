@@ -5,12 +5,16 @@ const pool = require('../config/db.js');
 // 1. REGISTRO (Para tu pantalla de "Solicitud de Cuenta")
 const register = async (req, res, next) => {
   try {
-    const { nombre_completo, email, password, cedula } = req.body;
+    const { nombre_completo, email, password, cedula, rol } = req.body;
 
     // Validaciones básicas de campos obligatorios
     if (!nombre_completo || !email || !password) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
     }
+
+    // Validar que el rol sea uno de los permitidos en el ENUM de la base de datos
+    const rolesPermitidos = ['Admin', 'Profesor', 'Evaluador'];
+    const rolFinal = rolesPermitidos.includes(rol) ? rol : 'Profesor';
 
     // Como tu interfaz de "Solicitud de Cuenta" no pide cédula, le generamos una interna basada en el tiempo 
     // o usamos la que venga en el req.body si decides agregar el input luego.
@@ -25,10 +29,10 @@ const register = async (req, res, next) => {
     // 2. Encriptar la contraseña con Bcrypt antes de guardarla
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // 3. Insertar primero en la tabla general de 'usuarios'
+    // 3. Insertar primero en la tabla general de 'usuarios' con el rol dinámico obtenido
     const [userResult] = await pool.query(
       'INSERT INTO usuarios (cedula, nombre_completo, email, password, rol) VALUES (?, ?, ?, ?, ?)',
-      [cedulaFinal, nombre_completo, email, passwordHash, 'Profesor']
+      [cedulaFinal, nombre_completo, email, passwordHash, rolFinal]
     );
 
     const nuevoUsuarioId = userResult.insertId;
@@ -41,7 +45,7 @@ const register = async (req, res, next) => {
 
     return res.status(201).json({ 
       message: 'Cuenta creada exitosamente. Ya puedes iniciar sesión.',
-      user: { id: nuevoUsuarioId, nombre_completo, email, rol: 'Profesor' }
+      user: { id: nuevoUsuarioId, nombre_completo, email, rol: rolFinal }
     });
 
   } catch (error) {
