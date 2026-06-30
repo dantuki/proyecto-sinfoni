@@ -54,8 +54,8 @@ function App() {
             🏠 Inicio / Dashboard
           </button>
           
-          {/* Si es Administrador, le podemos mostrar opciones exclusivas en el menú lateral */}
-          {usuario.rol === 'Administrador' && (
+          {/* Sincronizado: Ahora evalúa correctamente 'Admin' según la base de datos */}
+          {usuario.rol === 'Admin' && (
             <div className="mt-4 px-6 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
               Panel Admin
             </div>
@@ -76,12 +76,12 @@ function App() {
         <header className="h-16 bg-white/95 shadow-sm flex items-center justify-between px-8 z-10">
           <div className="text-slate-600 font-semibold">Sistema de Gestión Documental</div>
           <div className="flex items-center gap-4">
-            <div className="text-sm font-bold text-slate-700 uppercase">{usuario.nombre}</div>
+            {/* Sincronizado: Corregido de usuario.nombre a usuario.nombre_completo */}
+            <div className="text-sm font-bold text-slate-700 uppercase">{usuario.nombre_completo}</div>
             <button 
               onClick={() => { 
                 setUsuario(null); 
                 setVistaActual('inicio');
-                // Limpieza absoluta de Microsoft: ya no intentamos logoutPopup()
               }}
               className="text-xs bg-slate-200 hover:bg-red-500 hover:text-white px-3 py-1 rounded-full transition-colors text-slate-600"
             >
