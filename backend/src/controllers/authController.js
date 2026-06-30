@@ -5,19 +5,33 @@ const pool = require('../config/db.js');
 // 1. REGISTRO (Para tu pantalla de "Solicitud de Cuenta")
 const register = async (req, res, next) => {
   try {
-    const { nombre_completo, email, password, cedula, rol } = req.body;
+    const { nombre_completo, email, password, cedula, rol, captchaToken } = req.body;
 
     // Validaciones básicas de campos obligatorios
     if (!nombre_completo || !email || !password) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios.' });
     }
 
+    // Verificar reCAPTCHA con los servidores de Google
+    if (!captchaToken) {
+      return res.status(400).json({ error: 'Por favor, completa el reCAPTCHA de seguridad.' });
+    }
+
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY || '6LfwDj4tAAAAAADxjTBocXyVH9FXTkzjJkRhkZ5j';
+    const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${captchaToken}`;
+    
+    const captchaVerify = await fetch(verifyUrl, { method: 'POST' });
+    const captchaResult = await captchaVerify.json();
+
+    if (!captchaResult.success) {
+      return res.status(400).json({ error: 'La validación del reCAPTCHA ha fallado o expiró.' });
+    }
+
     // Validar que el rol sea uno de los permitidos en el ENUM de la base de datos
     const rolesPermitidos = ['Admin', 'Profesor', 'Evaluador'];
     const rolFinal = rolesPermitidos.includes(rol) ? rol : 'Profesor';
 
-    // Como tu interfaz de "Solicitud de Cuenta" no pide cédula, le generamos una interna basada en el tiempo 
-    // o usamos la que venga en el req.body si decides agregar el input luego.
+    // Cédula interna basada en tiempo si no se pasa en el body
     const cedulaFinal = cedula || `CC-${Date.now().toString().slice(-8)}`;
 
     // 1. Verificar si el correo ya existe en la base de datos
@@ -29,7 +43,7 @@ const register = async (req, res, next) => {
     // 2. Encriptar la contraseña con Bcrypt antes de guardarla
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // 3. Insertar primero en la tabla general de 'usuarios' con el rol dinámico obtenido
+    // 3. Insertar primero en la tabla general de 'usuarios'
     const [userResult] = await pool.query(
       'INSERT INTO usuarios (cedula, nombre_completo, email, password, rol) VALUES (?, ?, ?, ?, ?)',
       [cedulaFinal, nombre_completo, email, passwordHash, rolFinal]
@@ -37,7 +51,7 @@ const register = async (req, res, next) => {
 
     const nuevoUsuarioId = userResult.insertId;
 
-    // 4. Insertar en tu nueva tabla de 'login' para que quede habilitado para entrar
+    // 4. Insertar en tu nueva tabla de 'login' para habilitar acceso
     await pool.query(
       'INSERT INTO login (usuario_id, email, password) VALUES (?, ?, ?)',
       [nuevoUsuarioId, email, passwordHash]
@@ -56,10 +70,25 @@ const register = async (req, res, next) => {
 // 2. LOGIN (Para tu pantalla de "Autenticación")
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, captchaToken } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'El correo y la contraseña son obligatorios.' });
+    }
+
+    // Verificar reCAPTCHA con los servidores de Google
+    if (!captchaToken) {
+      return res.status(400).json({ error: 'Por favor, completa el reCAPTCHA de seguridad.' });
+    }
+
+    const secretKey = process.env.RECAPTCHA_SECRET_KEY || '6LfwDj4tAAAAAADxjTBocXyVH9FXTkzjJkRhkZ5j';
+    const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${captchaToken}`;
+    
+    const captchaVerify = await fetch(verifyUrl, { method: 'POST' });
+    const captchaResult = await captchaVerify.json();
+
+    if (!captchaResult.success) {
+      return res.status(400).json({ error: 'La validación del reCAPTCHA ha fallado o expiró.' });
     }
 
     // Buscar las credenciales directamente en la tabla 'login'

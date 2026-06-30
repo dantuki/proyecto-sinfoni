@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function AuthContainer({ alAutenticar }) {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [captchaChecked, setCaptchaChecked] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
 
   // Estados para capturar los datos de los formularios
   const [nombreCompleto, setNombreCompleto] = useState('');
@@ -19,7 +20,7 @@ export default function AuthContainer({ alAutenticar }) {
   // Cambiar entre Login y Registro limpiando estados
   const alternarVista = (v) => {
     setIsLogin(v);
-    setCaptchaChecked(false);
+    setCaptchaToken(null);
     setError('');
     setMensajeExito('');
     setEmail('');
@@ -39,17 +40,16 @@ export default function AuthContainer({ alAutenticar }) {
       return;
     }
 
-    if (!captchaChecked) {
-      setError('Por favor, marca la casilla "No soy un robot".');
+    if (!captchaToken) {
+      setError('Por favor, completa el reCAPTCHA de seguridad.');
       return;
     }
 
     try {
-      // Puerto corregido a 5000
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, captchaToken })
       });
 
       const data = await response.json();
@@ -89,13 +89,12 @@ export default function AuthContainer({ alAutenticar }) {
       return;
     }
 
-    if (!captchaChecked) {
-      setError('Por favor, marca la casilla "No soy un robot".');
+    if (!captchaToken) {
+      setError('Por favor, completa el reCAPTCHA de seguridad.');
       return;
     }
 
     try {
-      // Puerto corregido a 5000 enviando el rol de forma dinámica
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,7 +102,8 @@ export default function AuthContainer({ alAutenticar }) {
           nombre_completo: nombreCompleto,
           email,
           password,
-          rol // Enviamos el rol seleccionado en el formulario
+          rol,
+          captchaToken
         })
       });
 
@@ -116,7 +116,6 @@ export default function AuthContainer({ alAutenticar }) {
 
       setMensajeExito(`¡Cuenta con rol [${rol}] guardada con éxito en la base de datos!`);
       
-      // Esperamos 2 segundos para que veas el mensaje y te pasamos al Login solo
       setTimeout(() => {
         alternarVista(true);
       }, 2000);
@@ -209,38 +208,12 @@ export default function AuthContainer({ alAutenticar }) {
                   </div>
                 </div>
 
-                {/* Clon reCAPTCHA */}
-                <div className="w-[304px] h-[78px] bg-[#f9f9f9] border border-[#d3d3d3] rounded-sm flex items-center justify-between p-3 mx-auto shadow-[0_0_4px_rgba(0,0,0,0.05)] select-none">
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex items-center justify-center">
-                      <input 
-                        type="checkbox" 
-                        id="recaptcha-check-login"
-                        checked={captchaChecked}
-                        onChange={(e) => setCaptchaChecked(e.target.checked)}
-                        className="w-7 h-7 border-2 border-[#c1c1c1] rounded-sm bg-white checked:bg-white checked:border-[#c1c1c1] focus:ring-0 focus:ring-offset-0 appearance-none cursor-pointer transition-all"
-                      />
-                      {captchaChecked && (
-                        <span className="absolute text-emerald-600 text-xl font-bold pointer-events-none -mt-1 -ml-0.5">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                    <label htmlFor="recaptcha-check-login" className="text-sm font-normal text-[#282828] cursor-pointer">
-                      No soy un robot
-                    </label>
-                  </div>
-                  <div className="flex flex-col items-center justify-center pr-1">
-                    <svg className="w-8 h-8 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 4 4 0 0 0 4-4h-4a6 6 0 1 1 6-6h2a10 10 0 0 0-10-10z"/>
-                    </svg>
-                    <span className="text-[8px] text-[#555555] font-semibold mt-0.5 leading-none">reCAPTCHA</span>
-                    <div className="flex gap-1 text-[7px] text-[#555555] mt-1 leading-none">
-                      <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" className="hover:underline">Privacidad</a>
-                      <span>-</span>
-                      <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer" className="hover:underline">Términos</a>
-                    </div>
-                  </div>
+                {/* reCAPTCHA Real Google v2 */}
+                <div className="flex justify-center my-2">
+                  <ReCAPTCHA
+                    sitekey="6LfwDj4tAAAAANDLp_sh7UeUC1e8sgZ1LUfMBglj"
+                    onChange={(token) => setCaptchaToken(token)}
+                  />
                 </div>
 
                 <button
@@ -265,7 +238,7 @@ export default function AuthContainer({ alAutenticar }) {
             </div>
           ) : (
             
-            /* VISTA DE REGISTRO (SOLICITAR CUENTA MODIFICADO) */
+            /* VISTA DE REGISTRO */
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Solicitud de Cuenta</h1>
@@ -320,7 +293,6 @@ export default function AuthContainer({ alAutenticar }) {
                   </div>
                 </div>
 
-                {/* SELECTOR DE ROL ASIGNADO (MODO DESARROLLO) */}
                 <div className="space-y-1.5 text-left">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                     Rol de Usuario (Desarrollo)
@@ -336,33 +308,12 @@ export default function AuthContainer({ alAutenticar }) {
                   </select>
                 </div>
 
-                {/* Clon reCAPTCHA para Registro */}
-                <div className="w-[304px] h-[78px] bg-[#f9f9f9] border border-[#d3d3d3] rounded-sm flex items-center justify-between p-3 mx-auto shadow-[0_0_4px_rgba(0,0,0,0.05)] select-none">
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex items-center justify-center">
-                      <input 
-                        type="checkbox" 
-                        id="recaptcha-check-reg"
-                        checked={captchaChecked}
-                        onChange={(e) => setCaptchaChecked(e.target.checked)}
-                        className="w-7 h-7 border-2 border-[#c1c1c1] rounded-sm bg-white checked:bg-white checked:border-[#c1c1c1] focus:ring-0 focus:ring-offset-0 appearance-none cursor-pointer transition-all"
-                      />
-                      {captchaChecked && (
-                        <span className="absolute text-emerald-600 text-xl font-bold pointer-events-none -mt-1 -ml-0.5">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                    <label htmlFor="recaptcha-check-reg" className="text-sm font-normal text-[#282828] cursor-pointer">
-                      No soy un robot
-                    </label>
-                  </div>
-                  <div className="flex flex-col items-center justify-center pr-1">
-                    <svg className="w-8 h-8 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10 4 4 0 0 0 4-4h-4a6 6 0 1 1 6-6h2a10 10 0 0 0-10-10z"/>
-                    </svg>
-                    <span className="text-[8px] text-[#555555] font-semibold mt-0.5 leading-none">reCAPTCHA</span>
-                  </div>
+                {/* reCAPTCHA Real Google v2 para Registro */}
+                <div className="flex justify-center my-2">
+                  <ReCAPTCHA
+                    sitekey="6LfwDj4tAAAAANDLp_sh7UeUC1e8sgZ1LUfMBglj"
+                    onChange={(token) => setCaptchaToken(token)}
+                  />
                 </div>
 
                 <button
