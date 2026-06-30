@@ -10,6 +10,7 @@ export default function AuthContainer({ alAutenticar }) {
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rol, setRol] = useState('Profesor'); // Estado para el manejo de roles en desarrollo
   
   // Estados para alertas y feedback
   const [error, setError] = useState('');
@@ -24,6 +25,7 @@ export default function AuthContainer({ alAutenticar }) {
     setEmail('');
     setPassword('');
     setNombreCompleto('');
+    setRol('Profesor'); // Reseteamos el rol por defecto
   };
 
   // 1. Manejador del Login (Entrar)
@@ -43,7 +45,7 @@ export default function AuthContainer({ alAutenticar }) {
     }
 
     try {
-      // 🚀 CAMBIADO: Puerto corregido a 5000
+      // Puerto corregido a 5000
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,12 +62,12 @@ export default function AuthContainer({ alAutenticar }) {
       // Guardamos el Token en el almacenamiento local
       localStorage.setItem('token', data.token);
 
-      // Homologamos los datos para que coincidan con lo que usa tu App.jsx
+      // Sincronizado exactamente con las propiedades que espera tu App.jsx
       const usuarioFormateado = {
         id: data.user.id,
-        nombre: data.user.nombre_completo, // Mapeado a usuario.nombre
+        nombre_completo: data.user.nombre_completo, 
         email: data.user.email,
-        rol: data.user.rol === 'Admin' ? 'Administrador' : data.user.rol // Mapeado a Administrador
+        rol: data.user.rol 
       };
 
       // Mandamos el usuario a App.jsx para darle paso al Dashboard
@@ -93,14 +95,15 @@ export default function AuthContainer({ alAutenticar }) {
     }
 
     try {
-      // 🚀 CAMBIADO: Puerto corregido a 5000
+      // Puerto corregido a 5000 enviando el rol de forma dinámica
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre_completo: nombreCompleto,
           email,
-          password
+          password,
+          rol // Enviamos el rol seleccionado en el formulario
         })
       });
 
@@ -111,7 +114,7 @@ export default function AuthContainer({ alAutenticar }) {
         return;
       }
 
-      setMensajeExito('¡Cuenta guardada con éxito en la base de datos!');
+      setMensajeExito(`¡Cuenta con rol [${rol}] guardada con éxito en la base de datos!`);
       
       // Esperamos 2 segundos para que veas el mensaje y te pasamos al Login solo
       setTimeout(() => {
@@ -315,6 +318,22 @@ export default function AuthContainer({ alAutenticar }) {
                       {showConfirmPassword ? "Ocultar" : "Mostrar"}
                     </button>
                   </div>
+                </div>
+
+                {/* SELECTOR DE ROL ASIGNADO (MODO DESARROLLO) */}
+                <div className="space-y-1.5 text-left">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Rol de Usuario (Desarrollo)
+                  </label>
+                  <select 
+                    value={rol} 
+                    onChange={(e) => setRol(e.target.value)}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200 cursor-pointer"
+                  >
+                    <option value="Profesor">Profesor</option>
+                    <option value="Admin">Administrador (Admin)</option>
+                    <option value="Evaluador">Evaluador</option>
+                  </select>
                 </div>
 
                 {/* Clon reCAPTCHA para Registro */}
