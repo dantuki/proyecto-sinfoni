@@ -1,5 +1,7 @@
 const Usuario = require('../models/usuarioModel');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 
 const getUsuarios = async (req, res) => {
   try {
@@ -22,11 +24,9 @@ const registrarUsuario = async (req, res) => {
     const existe = await Usuario.getByCedula(cedula);
     if (existe) return res.status(400).json({ error: "Cédula ya existe" });
 
-    // Encriptación de la contraseña
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Reemplazamos la contraseña plana por la encriptada antes de enviarla al modelo
     const userData = { ...req.body, password: hashedPassword };
     
     const id = await Usuario.create(userData);
@@ -36,9 +36,41 @@ const registrarUsuario = async (req, res) => {
 
 const updateUsuario = async (req, res) => {
   try {
-    await Usuario.update(req.params.id, req.body);
-    res.json({ status: "success" });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    const { id } = req.params;
+
+    // 1. Buscamos el usuario actual con tu modelo para ver si ya tiene una foto en la BD
+    const usuarioActual = await Usuario.getById(id);
+    
+    // Validamos si viene dentro de un array o directo como objeto
+    const userObj = Array.isArray(usuarioActual) ? usuarioActual[0] : usuarioActual;
+
+    // 2. Clonamos lo que viene en el cuerpo del formulario (nombre, telefono, direccion, etc.)
+    const updateData = { ...req.body };
+
+    // 3. Si el usuario subió un archivo de imagen nuevo
+    if (req.file) {
+      // Si el registro ya tenía una foto vieja guardada, la borramos físicamente del servidor
+      if (userObj && userObj.foto_url) {
+        const rutaFotoVieja = path.join(__dirname, '../../', userObj.foto_url);
+        if (fs.existsSync(rutaFotoVieja)) {
+          fs.unlinkSync(rutaFotoVieja);
+        }
+      }
+      // Inyectamos la nueva ruta de la foto en el objeto de actualización
+      updateData.foto_url = `/uploads/${req.file.filename}`;
+    }
+
+    // 4. Enviamos todo el paquete empaquetado a tu modelo original
+    await Usuario.update(id, updateData);
+
+    res.json({ 
+      status: "success", 
+      message: "Usuario actualizado correctamente",
+      foto_url: updateData.foto_url || (userObj ? userObj.foto_url : null)
+    });
+  } catch (e) { 
+    res.status(500).json({ error: e.message }); 
+  }
 };
 
 const deleteUsuario = async (req, res) => {
