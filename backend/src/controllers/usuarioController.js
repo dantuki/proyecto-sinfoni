@@ -38,13 +38,13 @@ const updateUsuario = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Buscamos el usuario actual con tu modelo para ver si ya tiene una foto en la BD
+    // 1. Buscamos el usuario actual en la BD
     const usuarioActual = await Usuario.getById(id);
     
     // Validamos si viene dentro de un array o directo como objeto
     const userObj = Array.isArray(usuarioActual) ? usuarioActual[0] : usuarioActual;
 
-    // 2. Clonamos lo que viene en el cuerpo del formulario (nombre, telefono, direccion, etc.)
+    // 2. Clonamos lo que viene en el cuerpo del formulario
     const updateData = { ...req.body };
 
     // 3. Si el usuario subió un archivo de imagen nuevo
@@ -60,8 +60,14 @@ const updateUsuario = async (req, res) => {
       updateData.foto_url = `/uploads/${req.file.filename}`;
     }
 
-    // 4. Enviamos todo el paquete empaquetado a tu modelo original
-    await Usuario.update(id, updateData);
+    // 4. LÓGICA DE PERSISTENCIA SEGURA (UPSERT MANUAL)
+    // Si el usuario logueado no existe en la tabla de perfiles (ej: Profesores o Admins nuevos), lo creamos.
+    // Si ya existe, simplemente actualizamos sus datos.
+    if (!userObj) {
+      await Usuario.create({ id, ...updateData });
+    } else {
+      await Usuario.update(id, updateData);
+    }
 
     res.json({ 
       status: "success", 

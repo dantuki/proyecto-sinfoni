@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
 export default function DatosPersonales() {
+  // Modos y estados de la interfaz
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mensajeExito, setMensajeExito] = useState('');
 
+  // Estados del perfil de usuario
   const [userId, setUserId] = useState(null);
   const [cedula, setCedula] = useState('');
   const [email, setEmail] = useState('');
@@ -14,6 +16,7 @@ export default function DatosPersonales() {
   const [direccion, setDireccion] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
 
+  // Cargar datos al montar el componente
   useEffect(() => {
     const cargarDatosPerfil = async () => {
       try {
@@ -32,16 +35,21 @@ export default function DatosPersonales() {
         const response = await fetch(`http://localhost:5000/api/usuarios/${idUsuario}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        const data = await response.json();
+        
+        const resJson = await response.json();
 
-        if (response.ok && data) {
-          const usuario = Array.isArray(data) ? data[0] : data;
-          setCedula(usuario.cedula || '');
-          setEmail(usuario.email || '');
-          setNombreCompleto(usuario.nombre_completo || '');
-          setTelefono(usuario.telefono || '');
-          setDireccion(usuario.direccion || '');
-          setFotoUrl(usuario.foto_url || '');
+        // Solución al Problema 3: Desempaquetamos usando resJson.data
+        if (response.ok && resJson && resJson.data) {
+          const usuario = Array.isArray(resJson.data) ? resJson.data[0] : resJson.data;
+          
+          if (usuario) {
+            setCedula(usuario.cedula || '');
+            setEmail(usuario.email || '');
+            setNombreCompleto(usuario.nombre_completo || '');
+            setTelefono(usuario.telefono || '');
+            setDireccion(usuario.direccion || '');
+            setFotoUrl(usuario.foto_url || '');
+          }
         }
       } catch (err) {
         setError('Error al conectar con el servidor para traer tu perfil.');
@@ -53,19 +61,26 @@ export default function DatosPersonales() {
     cargarDatosPerfil();
   }, []);
 
+  // Manejar cambio y subida de foto de perfil
   const handleFotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const token = localStorage.getItem('token');
     const formData = new FormData();
     formData.append('foto', file);
     formData.append('nombre_completo', nombreCompleto);
+    formData.append('cedula', cedula);
+    formData.append('email', email);
     formData.append('telefono', telefono);
     formData.append('direccion', direccion);
 
     try {
+      setError('');
+      // Solución al Problema 2: Incluimos Authorization Bearer token
       const response = await fetch(`http://localhost:5000/api/usuarios/${userId}`, {
         method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
       const data = await response.json();
@@ -76,24 +91,31 @@ export default function DatosPersonales() {
       }
 
       setFotoUrl(data.foto_url);
-      setMensajeExito('¡Foto de perfil actualizada y archivo anterior purgado!');
+      setMensajeExito('¡Foto de perfil actualizada con éxito!');
       setTimeout(() => setMensajeExito(''), 3000);
     } catch (err) {
       setError('Error de red al intentar subir la foto.');
     }
   };
 
+  // Guardar cambios del formulario de texto
   const handleGuardarCambios = async (e) => {
     e.preventDefault();
     setError('');
     setMensajeExito('');
+    const token = localStorage.getItem('token');
 
     try {
       const response = await fetch(`http://localhost:5000/api/usuarios/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           nombre_completo: nombreCompleto,
+          cedula,
+          email,
           telefono,
           direccion
         })
@@ -106,7 +128,7 @@ export default function DatosPersonales() {
         return;
       }
 
-      setMensajeExito('¡Datos personales guardados con éxito en la base de datos!');
+      setMensajeExito('¡Datos personales guardados con éxito!');
       setIsEditing(false);
       setTimeout(() => setMensajeExito(''), 3000);
     } catch (err) {
@@ -126,6 +148,7 @@ export default function DatosPersonales() {
 
       <div className="flex flex-col md:flex-row gap-8">
         
+        {/* Zona Foto/Avatar e Identificación */}
         <div className="flex flex-col items-center w-full md:w-1/3 space-y-4">
           <div className="relative group w-40 h-40">
             {fotoUrl ? (
@@ -149,10 +172,22 @@ export default function DatosPersonales() {
 
           <div className="text-center w-full bg-slate-50 p-3 rounded-xl border border-slate-100">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documento de Identidad</p>
-            <p className="text-slate-700 font-bold text-lg">{cedula || 'Sin Cédula'}</p>
+            {/* Solución al Problema 1: Campo de Cédula ahora es un input real al editar */}
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={cedula} 
+                onChange={(e) => setCedula(e.target.value)} 
+                placeholder="Escribe tu cédula"
+                className="w-full mt-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-blue-500 font-semibold"
+              />
+            ) : (
+              <p className="text-slate-700 font-bold text-lg">{cedula || 'Sin Cédula'}</p>
+            )}
           </div>
         </div>
 
+        {/* Zona de Inputs del Formulario */}
         <form onSubmit={handleGuardarCambios} className="w-full md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-5">
           
           <div className="col-span-2">
@@ -171,7 +206,17 @@ export default function DatosPersonales() {
 
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Correo Electrónico</label>
-            <p className="text-slate-600 text-sm font-medium bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-100">{email}</p>
+            {/* Solución al Problema 1: Campo de Correo ahora es un input real al editar */}
+            {isEditing ? (
+              <input 
+                type="email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
+              />
+            ) : (
+              <p className="text-slate-600 text-sm font-medium bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-100">{email || 'Sin correo registrado'}</p>
+            )}
           </div>
 
           <div>
