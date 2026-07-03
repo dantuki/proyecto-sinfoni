@@ -115,7 +115,7 @@ export default function Noticias({ onVolver }) {
   return (
     <div className="w-full max-w-4xl mx-auto mt-6 space-y-6 p-4">
       
-      {/* Barra de acciones superior limpia y premium */}
+      {/* Barra de acciones superior */}
       <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200/60 shadow-sm">
         <button 
           onClick={onVolver}
@@ -135,10 +135,10 @@ export default function Noticias({ onVolver }) {
       {/* Contenedor Principal Estilizado */}
       <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-slate-100">
         
-        {/* Encabezado con Identidad del Módulo */}
+        {/* Encabezado - ¡AQUÍ SE CORRIGIÓ LA COMILLA EXTRAVIADA! */}
         <div className="bg-gradient-to-r from-[#619c8f] to-[#528479] px-6 py-4 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">bg-white/10 p-2 rounded-xl">📰</span>
+            <span className="text-2xl bg-white/10 p-2 rounded-xl">📰</span>
             <div>
               <h2 className="font-bold tracking-wider uppercase text-sm">Noticias e Historial Documental</h2>
               <p className="text-[10px] text-teal-100 uppercase tracking-widest mt-0.5 font-semibold">Módulo de Recursos Humanos</p>
@@ -175,7 +175,6 @@ export default function Noticias({ onVolver }) {
                       {new Date(item.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
                     </td>
                     
-                    {/* Solución al Problema: break-words y word-break evitan que el texto desconfigure la tabla */}
                     <td className="px-6 py-4 break-words whitespace-pre-wrap align-top">
                       <div className="text-[#c23616] font-bold uppercase tracking-wide text-[13px] mb-1 leading-snug">
                         {item.titulo}
@@ -221,10 +220,10 @@ export default function Noticias({ onVolver }) {
         )}
       </div>
 
-      {/* MODAL EMERGENTE MODERNIZADO (CREAR / EDITAR) */}
+      {/* MODAL EMERGENTE (CREAR / EDITAR) */}
       {modalAbierto && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 transform scale-100 transition-transform">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
             <div className="border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
                 {editandoId ? '📝 Editar Soporte / Publicación' : '✨ Nuevo Registro de Historial'}
@@ -234,10 +233,17 @@ export default function Noticias({ onVolver }) {
             
             <form onSubmit={handleGuardar} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px] tracking-wider">Título Oficial</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Título Oficial</label>
+                  {/* Contador Regresivo del Título */}
+                  <span className={`text-[9px] font-bold ${255 - titulo.length <= 15 ? 'text-red-500' : 'text-slate-400'}`}>
+                    {255 - titulo.length} caract.
+                  </span>
+                </div>
                 <input 
                   type="text" 
                   required 
+                  maxLength={255}
                   value={titulo} 
                   onChange={(e) => setTitulo(e.target.value)}
                   placeholder="Ej. Acta de Grado, Certificado de Ponencia"
@@ -246,9 +252,16 @@ export default function Noticias({ onVolver }) {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px] tracking-wider">Descripción o Resumen</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Descripción o Resumen</label>
+                  {/* Contador Regresivo del Contenido */}
+                  <span className={`text-[9px] font-bold ${500 - contenido.length <= 30 ? 'text-red-500' : 'text-slate-400'}`}>
+                    {500 - contenido.length} caract.
+                  </span>
+                </div>
                 <textarea 
                   value={contenido} 
+                  maxLength={500}
                   onChange={(e) => setContenido(e.target.value)}
                   placeholder="Detalles sobre el documento o noticia..."
                   rows="3"
