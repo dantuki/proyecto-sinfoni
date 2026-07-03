@@ -16,7 +16,6 @@ export default function Noticias({ onVolver }) {
   const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('token');
 
-  // Cargar noticias desde el backend filtradas por el usuario logueado
   const cargarNoticias = async () => {
     if (!userId) {
       setError('No se pudo identificar tu sesión de usuario.');
@@ -48,7 +47,7 @@ export default function Noticias({ onVolver }) {
     setEditandoId(null);
     setTitulo('');
     setContenido('');
-    setFecha(new Date().toISOString().split('T')[0]); // Carga la fecha actual por defecto
+    setFecha(new Date().toISOString().split('T')[0]);
     setArchivo(null);
     setModalAbierto(true);
   };
@@ -114,88 +113,104 @@ export default function Noticias({ onVolver }) {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto mt-6 space-y-4 p-2">
+    <div className="w-full max-w-4xl mx-auto mt-6 space-y-6 p-4">
       
-      {/* Botones de Navegación superiores */}
-      <div className="flex justify-between items-center">
+      {/* Barra de acciones superior limpia y premium */}
+      <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200/60 shadow-sm">
         <button 
           onClick={onVolver}
-          className="px-4 py-1.5 bg-slate-700 hover:bg-slate-800 text-white rounded text-xs font-semibold shadow-sm transition-colors"
+          className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-sm transition-all duration-200 flex items-center gap-1.5"
         >
-          ← Volver al Panel
+          <span>←</span> Volver al Panel
         </button>
         
         <button 
           onClick={abrirCrear}
-          className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold shadow-sm transition-colors"
+          className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-200 hover:shadow-none transition-all duration-200 flex items-center gap-1.5"
         >
-          + Agregar Registro
+          <span>+</span> Agregar Documento / Noticia
         </button>
       </div>
 
-      {/* Contenedor Principal de la Tabla */}
-      <div className="bg-white shadow-xl rounded-xl overflow-hidden border border-slate-200">
+      {/* Contenedor Principal Estilizado */}
+      <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-slate-100">
         
-        {/* Encabezado con tu Color Original (#619c8f) */}
-        <div className="bg-[#619c8f] px-4 py-3 flex items-center gap-2">
-          <span className="text-white text-xl">📰</span>
-          <h2 className="text-white font-bold tracking-wider uppercase text-sm">NOTICIAS / HISTORIAL PERSONAL</h2>
+        {/* Encabezado con Identidad del Módulo */}
+        <div className="bg-gradient-to-r from-[#619c8f] to-[#528479] px-6 py-4 flex justify-between items-center text-white">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">bg-white/10 p-2 rounded-xl">📰</span>
+            <div>
+              <h2 className="font-bold tracking-wider uppercase text-sm">Noticias e Historial Documental</h2>
+              <p className="text-[10px] text-teal-100 uppercase tracking-widest mt-0.5 font-semibold">Módulo de Recursos Humanos</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full border border-white/10">
+            Registros: {noticias.length}
+          </span>
         </div>
         
-        {error && <div className="p-3 text-xs text-red-600 bg-red-50 text-center border-b border-slate-100">⚠️ {error}</div>}
+        {error && <div className="p-4 text-xs font-semibold text-red-600 bg-red-50 text-center border-b border-red-100">⚠️ {error}</div>}
 
         {loading ? (
-          <div className="p-10 text-center text-xs text-slate-400 font-medium">Cargando tus registros personalizados...</div>
+          <div className="p-16 text-center text-xs text-slate-400 font-semibold tracking-wide uppercase">Cargando tu historial personalizado...</div>
         ) : noticias.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs font-semibold bg-slate-50/50 uppercase tracking-wide">
-            No tienes documentos ni publicaciones registradas aún.
+          <div className="p-20 text-center text-slate-400 text-xs font-bold bg-slate-50/30 uppercase tracking-widest space-y-2">
+            <div className="text-3xl opacity-40">📂</div>
+            <p>No tienes documentos ni publicaciones registradas aún.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="w-full overflow-hidden">
+            <table className="w-full text-left border-collapse table-fixed">
               <thead>
-                {/* Header con tu Color Original (#8abeb2) */}
-                <tr className="bg-[#8abeb2] text-white text-xs uppercase font-bold tracking-wider">
-                  <th className="p-3 border-r border-white/30 w-36">Fecha</th>
-                  <th className="p-3 border-r border-white/30">Título / Soporte</th>
-                  <th className="p-3 text-center w-44">Acciones</th>
+                <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+                  <th className="px-6 py-3 w-32">Fecha</th>
+                  <th className="px-6 py-3">Detalle del Registro</th>
+                  <th className="px-6 py-3 text-center w-48">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {noticias.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3 text-slate-500 font-semibold border-r border-slate-100">
+                  <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="px-6 py-4 text-slate-500 font-bold whitespace-nowrap align-top pt-5">
                       {new Date(item.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
                     </td>
-                    <td className="p-3 border-r border-slate-100">
-                      {/* Título con tu Color Original (#c23616) */}
-                      <div className="text-[#c23616] font-bold uppercase tracking-wide text-sm mb-0.5">
+                    
+                    {/* Solución al Problema: break-words y word-break evitan que el texto desconfigure la tabla */}
+                    <td className="px-6 py-4 break-words whitespace-pre-wrap align-top">
+                      <div className="text-[#c23616] font-bold uppercase tracking-wide text-[13px] mb-1 leading-snug">
                         {item.titulo}
                       </div>
-                      {item.contenido && <p className="text-slate-500 normal-case mb-1">{item.contenido}</p>}
+                      {item.contenido && (
+                        <p className="text-slate-600 normal-case font-medium text-xs leading-relaxed max-w-xl">
+                          {item.contenido}
+                        </p>
+                      )}
                       {item.archivo_url && (
-                        <a 
-                          href={`http://localhost:5000${item.archivo_url}`} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline font-bold mt-1"
-                        >
-                          📎 Ver Documento Adjunto
-                        </a>
+                        <div className="mt-2.5">
+                          <a 
+                            href={`http://localhost:5000${item.archivo_url}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-[11px] bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-bold transition-colors border border-blue-100 shadow-sm"
+                          >
+                            📎 Ver Soporte Adjunto
+                          </a>
+                        </div>
                       )}
                     </td>
-                    <td className="p-3 text-center space-x-1.5 whitespace-nowrap">
+                    
+                    <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap align-top pt-4">
                       <button 
                         onClick={() => abrirEditar(item)}
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded text-[10px] uppercase transition-colors"
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all border border-slate-200"
                       >
-                        Editar
+                        ✏️ Editar
                       </button>
                       <button 
                         onClick={() => handleEliminar(item.id)}
-                        className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded text-[10px] uppercase transition-colors"
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all border border-red-100"
                       >
-                        Borrar
+                        🗑️ Borrar
                       </button>
                     </td>
                   </tr>
@@ -204,79 +219,78 @@ export default function Noticias({ onVolver }) {
             </table>
           </div>
         )}
-        
-        {/* Footer con tu Color Original (#619c8f) */}
-        <div className="bg-[#619c8f] px-4 py-2.5 flex justify-between items-center text-white text-xs font-medium">
-          <p>Elementos registrados: {noticias.length}</p>
-          <span className="text-[10px] opacity-80 uppercase tracking-widest font-bold">Recursos Humanos</span>
-        </div>
       </div>
 
-      {/* MODAL EMERGENTE (CREAR / EDITAR) */}
+      {/* MODAL EMERGENTE MODERNIZADO (CREAR / EDITAR) */}
       {modalAbierto && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
-            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-100 pb-2">
-              {editandoId ? '📝 Editar Publicación / Soporte' : '✨ Nuevo Registro de Historial'}
-            </h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 transform scale-100 transition-transform">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
+                {editandoId ? '📝 Editar Soporte / Publicación' : '✨ Nuevo Registro de Historial'}
+              </h3>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Completa los campos para actualizar tu repositorio personal.</p>
+            </div>
             
-            <form onSubmit={handleGuardar} className="space-y-3 text-xs">
+            <form onSubmit={handleGuardar} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px]">Título</label>
+                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px] tracking-wider">Título Oficial</label>
                 <input 
                   type="text" 
                   required 
                   value={titulo} 
                   onChange={(e) => setTitulo(e.target.value)}
-                  placeholder="Ej. Acta de Grado, Certificado laboral"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#619c8f] focus:bg-white"
+                  placeholder="Ej. Acta de Grado, Certificado de Ponencia"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#619c8f] focus:bg-white transition-all text-slate-800 font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px]">Descripción (Opcional)</label>
+                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px] tracking-wider">Descripción o Resumen</label>
                 <textarea 
                   value={contenido} 
                   onChange={(e) => setContenido(e.target.value)}
-                  placeholder="Información adicional útil..."
+                  placeholder="Detalles sobre el documento o noticia..."
                   rows="3"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#619c8f] focus:bg-white"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#619c8f] focus:bg-white transition-all text-slate-700 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px]">Fecha</label>
+                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px] tracking-wider">Fecha del Registro</label>
                 <input 
                   type="date" 
                   required
                   value={fecha} 
                   onChange={(e) => setFecha(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#619c8f] focus:bg-white"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#619c8f] focus:bg-white transition-all font-semibold text-slate-700"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px]">Subir Documento o Imagen</label>
-                <input 
-                  type="file" 
-                  onChange={(e) => setArchivo(e.target.files[0])}
-                  className="w-full text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer"
-                />
+                <label className="block font-bold text-slate-400 uppercase mb-1 text-[10px] tracking-wider">Cargar Documento Digital</label>
+                <div className="mt-1 p-3 bg-slate-50 border border-dashed border-slate-200 rounded-xl flex items-center justify-center">
+                  <input 
+                    type="file" 
+                    onChange={(e) => setArchivo(e.target.files[0])}
+                    className="w-full text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-slate-800 file:text-white hover:file:bg-slate-700 cursor-pointer"
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button 
                   type="button" 
                   onClick={() => setModalAbierto(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-lg transition-colors"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl transition-colors"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
-                  className="px-4 py-2 bg-[#619c8f] hover:bg-[#528479] text-white font-semibold rounded-lg shadow-sm transition-colors"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-sm transition-colors uppercase text-[10px] tracking-wider"
                 >
-                  Guardar Cambios
+                  Guardar Registro
                 </button>
               </div>
             </form>
