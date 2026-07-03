@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
 export default function DatosPersonales() {
-  // Modos de la interfaz
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mensajeExito, setMensajeExito] = useState('');
 
-  // Estados dinámicos vinculados a la Base de Datos
   const [userId, setUserId] = useState(null);
   const [cedula, setCedula] = useState('');
   const [email, setEmail] = useState('');
@@ -16,22 +14,19 @@ export default function DatosPersonales() {
   const [direccion, setDireccion] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
 
-  // Cargar los datos del usuario logueado al montar el componente
   useEffect(() => {
     const cargarDatosPerfil = async () => {
       try {
-        // Obtenemos el token guardado en el Login
         const token = localStorage.getItem('token');
-        if (!token) {
-          setError('No hay una sesión activa.');
+        const storedUserId = localStorage.getItem('userId');
+
+        if (!token || !storedUserId) {
+          setError('No hay una sesión activa. Vuelve a iniciar sesión.');
           setLoading(false);
           return;
         }
 
-        // Decodificar el token de forma sencilla o usar la info almacenada
-        // Para este ejemplo, asumimos que puedes consultar tu endpoint del backend directamente.
-        // Reemplaza el '1' por el ID dinámico que venga de tu estado global de Auth si es necesario.
-        const idUsuario = 1; 
+        const idUsuario = parseInt(storedUserId, 10);
         setUserId(idUsuario);
 
         const response = await fetch(`http://localhost:5000/api/usuarios/${idUsuario}`, {
@@ -40,7 +35,6 @@ export default function DatosPersonales() {
         const data = await response.json();
 
         if (response.ok && data) {
-          // Si tu endpoint devuelve una estructura directa o un array [0]
           const usuario = Array.isArray(data) ? data[0] : data;
           setCedula(usuario.cedula || '');
           setEmail(usuario.email || '');
@@ -59,7 +53,6 @@ export default function DatosPersonales() {
     cargarDatosPerfil();
   }, []);
 
-  // Manejar cambio de foto de perfil
   const handleFotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -90,7 +83,6 @@ export default function DatosPersonales() {
     }
   };
 
-  // Guardar cambios del formulario de texto
   const handleGuardarCambios = async (e) => {
     e.preventDefault();
     setError('');
@@ -129,13 +121,11 @@ export default function DatosPersonales() {
   return (
     <div className="w-full max-w-4xl bg-white shadow-sm rounded-2xl border border-slate-100 p-8 mx-auto mt-6 space-y-6">
       
-      {/* Alertas */}
       {error && <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center">⚠️ {error}</div>}
       {mensajeExito && <div className="p-3 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-100 text-center">🎉 {mensajeExito}</div>}
 
       <div className="flex flex-col md:flex-row gap-8">
         
-        {/* Zona Foto/Avatar e Identificación */}
         <div className="flex flex-col items-center w-full md:w-1/3 space-y-4">
           <div className="relative group w-40 h-40">
             {fotoUrl ? (
@@ -145,13 +135,11 @@ export default function DatosPersonales() {
                 className="w-full h-full object-cover rounded-full border-4 border-slate-50 shadow-sm" 
               />
             ) : (
-              /* Solución 1: Iniciales Dinámicas */
               <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-5xl shadow-inner uppercase">
                 {nombreCompleto ? nombreCompleto.charAt(0) : 'U'}
               </div>
             )}
             
-            {/* Input Oculto de Tipo Archivo para Subir Foto */}
             <label className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer text-center p-2">
               <span className="text-xl">📷</span>
               <span className="text-[10px] font-bold uppercase tracking-wider mt-1">Cambiar Foto</span>
@@ -165,7 +153,6 @@ export default function DatosPersonales() {
           </div>
         </div>
 
-        {/* Zona de Inputs / Visualización */}
         <form onSubmit={handleGuardarCambios} className="w-full md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-5">
           
           <div className="col-span-2">
@@ -220,7 +207,6 @@ export default function DatosPersonales() {
             )}
           </div>
 
-          {/* Botonera de Control */}
           <div className="col-span-2 flex justify-end gap-3 pt-2">
             {isEditing ? (
               <>

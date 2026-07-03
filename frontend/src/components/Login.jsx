@@ -11,7 +11,7 @@ export default function AuthContainer({ alAutenticar }) {
   const [nombreCompleto, setNombreCompleto] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rol, setRol] = useState('Profesor'); // Estado para el manejo de roles en desarrollo
+  const [rol, setRol] = useState('Profesor');
   
   // Estados para alertas y feedback
   const [error, setError] = useState('');
@@ -26,7 +26,7 @@ export default function AuthContainer({ alAutenticar }) {
     setEmail('');
     setPassword('');
     setNombreCompleto('');
-    setRol('Profesor'); // Reseteamos el rol por defecto
+    setRol('Profesor');
   };
 
   // 1. Manejador del Login (Entrar)
@@ -59,8 +59,9 @@ export default function AuthContainer({ alAutenticar }) {
         return;
       }
 
-      // Guardamos el Token en el almacenamiento local
+      // Guardamos el Token y el ID en el almacenamiento local
       localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', data.user.id);
 
       // Sincronizado exactamente con las propiedades que espera tu App.jsx
       const usuarioFormateado = {
@@ -128,11 +129,9 @@ export default function AuthContainer({ alAutenticar }) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-6 sm:p-10 font-sans selection:bg-blue-500 selection:text-white">
       
-      {/* Contenedor Central */}
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6 transition-all duration-300">
           
-          {/* Logo Corporativo */}
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => alternarVista(true)}>
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center shadow-md shadow-blue-500/20 transition-transform group-hover:scale-105">
               <span className="text-white font-black text-xl tracking-tighter">A</span>
@@ -145,7 +144,6 @@ export default function AuthContainer({ alAutenticar }) {
             </div>
           </div>
 
-          {/* MENSAJES DE ALERTA O ÉXITO */}
           {error && (
             <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center">
               ⚠️ {error}
@@ -157,7 +155,6 @@ export default function AuthContainer({ alAutenticar }) {
             </div>
           )}
 
-          {/* VISTA DE LOGIN */}
           {isLogin ? (
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-1.5">
@@ -208,7 +205,6 @@ export default function AuthContainer({ alAutenticar }) {
                   </div>
                 </div>
 
-                {/* reCAPTCHA Real Google v2 */}
                 <div className="flex justify-center my-2">
                   <ReCAPTCHA
                     sitekey="6LfwDj4tAAAAANDLp_sh7UeUC1e8sgZ1LUfMBglj"
@@ -238,7 +234,6 @@ export default function AuthContainer({ alAutenticar }) {
             </div>
           ) : (
             
-            /* VISTA DE REGISTRO */
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Solicitud de Cuenta</h1>
@@ -308,7 +303,6 @@ export default function AuthContainer({ alAutenticar }) {
                   </select>
                 </div>
 
-                {/* reCAPTCHA Real Google v2 para Registro */}
                 <div className="flex justify-center my-2">
                   <ReCAPTCHA
                     sitekey="6LfwDj4tAAAAANDLp_sh7UeUC1e8sgZ1LUfMBglj"
@@ -341,7 +335,6 @@ export default function AuthContainer({ alAutenticar }) {
         </div>
       </div>
 
-      {/* Footer */}
       <div className="flex flex-col sm:flex-row gap-2 justify-between items-center border-t border-slate-200/60 pt-4 text-[11px] font-medium text-slate-400">
         <span className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
