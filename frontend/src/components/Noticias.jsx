@@ -46,7 +46,6 @@ export default function Noticias({ onVolver }) {
     cargarNoticias();
   }, [userId]);
 
-  // Alterna la expansión de la noticia
   const toggleExpandir = (id) => {
     setExpandidoId(expandidoId === id ? null : id);
   };
@@ -111,7 +110,6 @@ export default function Noticias({ onVolver }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        // Si eliminamos la que está abierta, reseteamos el expandido
         if (expandidoId === id) setExpandidoId(null);
         cargarNoticias();
       } else {
@@ -123,10 +121,11 @@ export default function Noticias({ onVolver }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-6 space-y-6 p-4">
+    /* Cambiado a max-w-7xl para darle una amplitud brutal en el escritorio */
+    <div className="w-full max-w-7xl mx-auto mt-6 space-y-6 p-4">
       
       {/* Barra de acciones superior */}
-      <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200/60 shadow-sm">
+      <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200/60 shadow-sm">
         <button 
           onClick={onVolver}
           className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-sm transition-all duration-200 flex items-center gap-1.5"
@@ -146,7 +145,7 @@ export default function Noticias({ onVolver }) {
       <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-slate-100">
         
         {/* Encabezado */}
-        <div className="bg-gradient-to-r from-[#619c8f] to-[#528479] px-6 py-4 flex justify-between items-center text-white">
+        <div className="bg-gradient-to-r from-[#619c8f] to-[#528479] px-6 py-5 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">
             <span className="text-2xl bg-white/10 p-2 rounded-xl">📰</span>
             <div>
@@ -173,9 +172,9 @@ export default function Noticias({ onVolver }) {
             <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-slate-400 text-[10px] uppercase font-bold tracking-wider">
-                  <th className="px-6 py-3 w-32">Fecha</th>
-                  <th className="px-6 py-3">Detalle del Registro</th>
-                  <th className="px-6 py-3 text-center w-48">Acciones</th>
+                  <th className="px-6 py-3.5 w-36">Fecha</th>
+                  <th className="px-6 py-3.5">Detalle del Registro</th>
+                  <th className="px-6 py-3.5 text-center w-52">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
@@ -188,7 +187,6 @@ export default function Noticias({ onVolver }) {
                       </td>
                       
                       <td className="px-6 py-4 break-words align-top">
-                        {/* El título ahora es un botón tipo enlace interactivo */}
                         <button
                           type="button"
                           onClick={() => toggleExpandir(item.id)}
@@ -200,11 +198,11 @@ export default function Noticias({ onVolver }) {
                           <span>{item.titulo}</span>
                         </button>
 
-                        {/* Contenido Desplegable (Efecto Acordeón) */}
                         {estaExpandido && (
+                          /* Se aumentó el max-w-xl a max-w-4xl para que el texto aproveche el nuevo ancho */
                           <div className="mt-2.5 pl-4 border-l-2 border-slate-200 space-y-2.5 animate-fade-in">
                             {item.contenido && (
-                              <p className="text-slate-600 normal-case font-medium text-xs leading-relaxed max-w-xl whitespace-pre-wrap">
+                              <p className="text-slate-600 normal-case font-medium text-xs leading-relaxed max-w-4xl whitespace-pre-wrap">
                                 {item.contenido}
                               </p>
                             )}
