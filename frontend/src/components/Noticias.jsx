@@ -5,6 +5,9 @@ export default function Noticias({ onVolver }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Estado para controlar qué registro está desplegado (guarda el ID)
+  const [expandidoId, setExpandidoId] = useState(null);
+
   // Estados para el formulario (Crear / Editar)
   const [modalAbierto, setModalAbierto] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
@@ -42,6 +45,11 @@ export default function Noticias({ onVolver }) {
   useEffect(() => {
     cargarNoticias();
   }, [userId]);
+
+  // Alterna la expansión de la noticia
+  const toggleExpandir = (id) => {
+    setExpandidoId(expandidoId === id ? null : id);
+  };
 
   const abrirCrear = () => {
     setEditandoId(null);
@@ -103,6 +111,8 @@ export default function Noticias({ onVolver }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
+        // Si eliminamos la que está abierta, reseteamos el expandido
+        if (expandidoId === id) setExpandidoId(null);
         cargarNoticias();
       } else {
         alert('No se pudo eliminar el registro.');
@@ -135,7 +145,7 @@ export default function Noticias({ onVolver }) {
       {/* Contenedor Principal Estilizado */}
       <div className="bg-white shadow-sm rounded-2xl overflow-hidden border border-slate-100">
         
-        {/* Encabezado - ¡AQUÍ SE CORRIGIÓ LA COMILLA EXTRAVIADA! */}
+        {/* Encabezado */}
         <div className="bg-gradient-to-r from-[#619c8f] to-[#528479] px-6 py-4 flex justify-between items-center text-white">
           <div className="flex items-center gap-3">
             <span className="text-2xl bg-white/10 p-2 rounded-xl">📰</span>
@@ -169,51 +179,68 @@ export default function Noticias({ onVolver }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {noticias.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="px-6 py-4 text-slate-500 font-bold whitespace-nowrap align-top pt-5">
-                      {new Date(item.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
-                    </td>
-                    
-                    <td className="px-6 py-4 break-words whitespace-pre-wrap align-top">
-                      <div className="text-[#c23616] font-bold uppercase tracking-wide text-[13px] mb-1 leading-snug">
-                        {item.titulo}
-                      </div>
-                      {item.contenido && (
-                        <p className="text-slate-600 normal-case font-medium text-xs leading-relaxed max-w-xl">
-                          {item.contenido}
-                        </p>
-                      )}
-                      {item.archivo_url && (
-                        <div className="mt-2.5">
-                          <a 
-                            href={`http://localhost:5000${item.archivo_url}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 text-[11px] bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-bold transition-colors border border-blue-100 shadow-sm"
-                          >
-                            📎 Ver Soporte Adjunto
-                          </a>
-                        </div>
-                      )}
-                    </td>
-                    
-                    <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap align-top pt-4">
-                      <button 
-                        onClick={() => abrirEditar(item)}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all border border-slate-200"
-                      >
-                        ✏️ Editar
-                      </button>
-                      <button 
-                        onClick={() => handleEliminar(item.id)}
-                        className="px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all border border-red-100"
-                      >
-                        🗑️ Borrar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {noticias.map((item) => {
+                  const estaExpandido = expandidoId === item.id;
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-6 py-4 text-slate-500 font-bold whitespace-nowrap align-top pt-5">
+                        {new Date(item.fecha).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
+                      </td>
+                      
+                      <td className="px-6 py-4 break-words align-top">
+                        {/* El título ahora es un botón tipo enlace interactivo */}
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandir(item.id)}
+                          className="text-[#c23616] font-bold uppercase tracking-wide text-[13px] mb-1 leading-snug hover:underline text-left flex items-center gap-2 focus:outline-none w-full"
+                        >
+                          <span className="text-[10px] text-slate-400 transition-transform duration-200">
+                            {estaExpandido ? '▼' : '▶'}
+                          </span>
+                          <span>{item.titulo}</span>
+                        </button>
+
+                        {/* Contenido Desplegable (Efecto Acordeón) */}
+                        {estaExpandido && (
+                          <div className="mt-2.5 pl-4 border-l-2 border-slate-200 space-y-2.5 animate-fade-in">
+                            {item.contenido && (
+                              <p className="text-slate-600 normal-case font-medium text-xs leading-relaxed max-w-xl whitespace-pre-wrap">
+                                {item.contenido}
+                              </p>
+                            )}
+                            {item.archivo_url && (
+                              <div className="pt-1">
+                                <a 
+                                  href={`http://localhost:5000${item.archivo_url}`} 
+                                  target="_blank" 
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1.5 text-[11px] bg-blue-50 text-blue-700 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-bold transition-colors border border-blue-100 shadow-sm"
+                                >
+                                  📎 Ver Soporte Adjunto
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      
+                      <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap align-top pt-4">
+                        <button 
+                          onClick={() => abrirEditar(item)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all border border-slate-200"
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button 
+                          onClick={() => handleEliminar(item.id)}
+                          className="px-3 py-1.5 bg-red-50 hover:bg-red-600 hover:text-white text-red-600 font-bold rounded-lg text-[10px] uppercase tracking-wider transition-all border border-red-100"
+                        >
+                          🗑️ Borrar
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -235,7 +262,6 @@ export default function Noticias({ onVolver }) {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Título Oficial</label>
-                  {/* Contador Regresivo del Título */}
                   <span className={`text-[9px] font-bold ${255 - titulo.length <= 15 ? 'text-red-500' : 'text-slate-400'}`}>
                     {255 - titulo.length} caract.
                   </span>
@@ -254,7 +280,6 @@ export default function Noticias({ onVolver }) {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="block font-bold text-slate-400 uppercase text-[10px] tracking-wider">Descripción o Resumen</label>
-                  {/* Contador Regresivo del Contenido */}
                   <span className={`text-[9px] font-bold ${500 - contenido.length <= 30 ? 'text-red-500' : 'text-slate-400'}`}>
                     {500 - contenido.length} caract.
                   </span>
