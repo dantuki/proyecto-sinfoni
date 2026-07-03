@@ -97,6 +97,17 @@ CREATE TABLE IF NOT EXISTS login (
     ultimo_acceso TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
+-- 8. TABLA:NOTICIAS ( donde podran guardar cada uno sus logros y demas )
+CREATE TABLE IF NOT EXISTS noticias (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  usuario_id INT NOT NULL,
+  titulo VARCHAR(255) NOT NULL,
+  contenido TEXT NULL,
+  archivo_url VARCHAR(255) NULL,
+  fecha DATE NOT NULL,
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 -- ========================================================
 -- INSERCIÓN DE DATOS INICIALES Y CUENTAS DE PRUEBA
