@@ -4,6 +4,7 @@ import InicioCards from './components/InicioCards';
 import DatosPersonales from './components/DatosPersonales';
 import Noticias from './components/Noticias';
 import FormularioSolicitud from './components/FormularioSolicitud';
+import Proyectos from './components/Proyectos'; // 👈 Importamos el nuevo componente
 
 function App() {
   // Estado local para guardar el usuario logueado con su rol
@@ -25,6 +26,8 @@ function App() {
         return <Noticias usuario={usuario} />;
       case 'formulario':
         return <FormularioSolicitud usuario={usuario} />;
+      case 'proyectos':
+        return <Proyectos onVolver={() => setVistaActual('inicio')} />; // 👈 Nueva vista conectada
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -54,7 +57,7 @@ function App() {
             🏠 Inicio / Dashboard
           </button>
           
-          {/* Sincronizado: Ahora evalúa correctamente 'Admin' según la base de datos */}
+          {/* Sincronizado: Panel Admin */}
           {usuario.rol === 'Admin' && (
             <div className="mt-4 px-6 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
               Panel Admin
@@ -76,7 +79,6 @@ function App() {
         <header className="h-16 bg-white/95 shadow-sm flex items-center justify-between px-8 z-10">
           <div className="text-slate-600 font-semibold">Sistema de Gestión Documental</div>
           <div className="flex items-center gap-4">
-            {/* Sincronizado: Corregido de usuario.nombre a usuario.nombre_completo */}
             <div className="text-sm font-bold text-slate-700 uppercase">{usuario.nombre_completo}</div>
             <button 
               onClick={() => { 
@@ -91,7 +93,7 @@ function App() {
         </header>
 
         {/* CONTENEDOR DINÁMICO */}
-        <div className="flex-1 overflow-y-auto p-8 z-10 flex flex-col items-center">
+        <div className="flex-1 overflow-y-auto p-8 z-10 flex flex-col items-center w-full">
           {vistaActual !== 'inicio' && (
             <button 
               onClick={() => setVistaActual('inicio')}
