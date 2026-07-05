@@ -14,7 +14,7 @@ const InicioCards = ({ cambiarVista }) => {
       icono: '🌐',
       color: 'from-indigo-500 to-indigo-600',
       opciones: [
-        { nombre: 'Mis Proyectos', vista: 'en_construccion' },
+        { nombre: 'Mis Proyectos', vista: 'proyectos' }, // 👈 Cambiado de 'en_construccion' a 'proyectos'
         { nombre: 'Mis Participaciones', vista: 'en_construccion' }
       ]
     },
