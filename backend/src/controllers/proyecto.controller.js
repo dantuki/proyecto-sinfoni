@@ -83,9 +83,45 @@ const crearProyecto = async (req, res) => {
   }
 };
 
+// DOCUMENTACIÓN: Obtener el repositorio de archivos de un proyecto específico
+const obtenerDocumentosProyecto = async (req, res) => {
+  const { id } = req.params;
+  const sql = 'SELECT * FROM documentos_proyecto WHERE proyecto_id = ? ORDER BY fecha_subida DESC';
+
+  try {
+    const [rows] = await db.query(sql, [id]);
+    res.json({ success: true, data: rows });
+  } catch (error) {
+    console.error('Error en obtenerDocumentosProyecto:', error);
+    res.status(500).json({ error: 'Error al cargar los documentos del proyecto.' });
+  }
+};
+
+// DOCUMENTACIÓN: Guardar el registro de un nuevo documento subido
+const crearDocumentoProyecto = async (req, res) => {
+  const { id } = req.params; // ID del proyecto proveniente de la URL
+  const { nombre_archivo, tipo_documento } = req.body;
+
+  if (!nombre_archivo || !tipo_documento) {
+    return res.status(400).json({ error: 'El nombre del archivo y el tipo son obligatorios.' });
+  }
+
+  const sql = 'INSERT INTO documentos_proyecto (proyecto_id, nombre_archivo, tipo_documento) VALUES (?, ?, ?)';
+
+  try {
+    const [result] = await db.query(sql, [id, nombre_archivo, tipo_documento]);
+    res.json({ success: true, message: 'Documento indexado con éxito', insertId: result.insertId });
+  } catch (error) {
+    console.error('Error en crearDocumentoProyecto:', error);
+    res.status(500).json({ error: 'Error al registrar el documento en MySQL.' });
+  }
+};
+
 module.exports = {
   obtenerTodosLosProyectos,
   obtenerMisProyectos,
   obtenerMisParticipaciones,
-  crearProyecto
+  crearProyecto,
+  obtenerDocumentosProyecto,
+  crearDocumentoProyecto
 };

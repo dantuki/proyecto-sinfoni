@@ -4,7 +4,9 @@ const {
   obtenerTodosLosProyectos, 
   obtenerMisProyectos, 
   obtenerMisParticipaciones,
-  crearProyecto 
+  crearProyecto,
+  obtenerDocumentosProyecto,
+  crearDocumentoProyecto
 } = require('../controllers/proyecto.controller');
 const verificarToken = require('../middleware/authMiddleware');
 
@@ -15,5 +17,9 @@ router.post('/', verificarToken, crearProyecto);
 // Rutas de segmentación para perfiles docentes por ID
 router.get('/director/:id', verificarToken, obtenerMisProyectos);
 router.get('/participante/:id', verificarToken, obtenerMisParticipaciones);
+
+// Rutas del Repositorio de Documentación por ID de Proyecto
+router.get('/:id/documentos', verificarToken, obtenerDocumentosProyecto);
+router.post('/:id/documentos', verificarToken, crearDocumentoProyecto);
 
 module.exports = router;
