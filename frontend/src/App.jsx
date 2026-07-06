@@ -4,14 +4,12 @@ import InicioCards from './components/InicioCards';
 import DatosPersonales from './components/DatosPersonales';
 import Noticias from './components/Noticias';
 import FormularioSolicitud from './components/FormularioSolicitud';
-import Proyectos from './components/Proyectos'; // 👈 Importamos el nuevo componente
+import Proyectos from './components/Proyectos';
 
 function App() {
-  // Estado local para guardar el usuario logueado con su rol
   const [usuario, setUsuario] = useState(null); 
   const [vistaActual, setVistaActual] = useState('inicio');
 
-  // Si el usuario no está autenticado, lo mandamos directo al Login
   if (!usuario) {
     return <Login alAutenticar={setUsuario} />;
   }
@@ -27,7 +25,7 @@ function App() {
       case 'formulario':
         return <FormularioSolicitud usuario={usuario} />;
       case 'proyectos':
-        return <Proyectos onVolver={() => setVistaActual('inicio')} />; // 👈 Nueva vista conectada
+        return <Proyectos usuario={usuario} onVolver={() => setVistaActual('inicio')} />; // 👈 Corregido: Ahora pasa el usuario completo
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -57,7 +55,6 @@ function App() {
             🏠 Inicio / Dashboard
           </button>
           
-          {/* Sincronizado: Panel Admin */}
           {usuario.rol === 'Admin' && (
             <div className="mt-4 px-6 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
               Panel Admin

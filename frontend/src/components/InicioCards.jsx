@@ -1,4 +1,7 @@
-const InicioCards = ({ cambiarVista }) => {
+const InicioCards = ({ cambiarVista, usuario }) => {
+  // Evaluamos si el rol del usuario es Administrador
+  const esAdmin = usuario?.rol === 'Admin';
+
   const categorias = [
     {
       titulo: 'Recursos Humanos',
@@ -6,7 +9,7 @@ const InicioCards = ({ cambiarVista }) => {
       color: 'from-blue-500 to-blue-600',
       opciones: [
         { nombre: 'Datos Personales', vista: 'datos_personales' },
-        { nombre: 'Noticias', vista: 'noticias' }
+        { nombre: esAdmin ? 'Administrar Noticias' : 'Noticias', vista: 'noticias' }
       ]
     },
     {
@@ -14,8 +17,9 @@ const InicioCards = ({ cambiarVista }) => {
       icono: '🌐',
       color: 'from-indigo-500 to-indigo-600',
       opciones: [
-        { nombre: 'Mis Proyectos', vista: 'proyectos' }, // 👈 Cambiado de 'en_construccion' a 'proyectos'
-        { nombre: 'Mis Participaciones', vista: 'en_construccion' }
+        // Si es Admin cambia el texto a "Gestión de Proyectos", si es Profesor dice "Mis Proyectos"
+        { nombre: esAdmin ? 'Gestión de Proyectos' : 'Mis Proyectos', vista: 'proyectos' },
+        { nombre: esAdmin ? 'Control de Participaciones' : 'Mis Participaciones', vista: 'en_construccion' }
       ]
     },
     {
@@ -23,7 +27,7 @@ const InicioCards = ({ cambiarVista }) => {
       icono: '📑',
       color: 'from-green-500 to-green-600',
       opciones: [
-        { nombre: 'Mis Solicitudes (Formulario)', vista: 'formulario' },
+        { nombre: esAdmin ? 'Revisar Solicitudes' : 'Mis Solicitudes (Formulario)', vista: 'formulario' },
         { nombre: 'Convocatorias Abiertas', vista: 'en_construccion' }
       ]
     }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function Proyectos({ onVolver }) {
+export default function Proyectos({ usuario, onVolver }) {
   const [proyectos, setProyectos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -14,16 +14,23 @@ export default function Proyectos({ onVolver }) {
   const token = localStorage.getItem('token');
 
   const cargarProyectos = async () => {
-    if (!userId) {
-      setError('No se pudo identificar la sesión de usuario.');
-      setLoading(false);
-      return;
-    }
-    
     setLoading(true);
     try {
-      // Pasamos el filtro de estado como Query Param de una vez
-      const url = `http://localhost:5000/api/proyectos/director/${userId}?estado=${estadoFiltro}`;
+      // 👈 Lógica de Endpoints Dinámicos según el Rol
+      let url = '';
+      if (usuario?.rol === 'Admin') {
+        // Si es Admin, apunta al endpoint global de proyectos
+        url = `http://localhost:5000/api/proyectos?estado=${estadoFiltro}`;
+      } else {
+        // Si es Profesor o cualquier otro, mantiene su filtro por director_id
+        if (!userId) {
+          setError('No se pudo identificar la sesión de usuario.');
+          setLoading(false);
+          return;
+        }
+        url = `http://localhost:5000/api/proyectos/director/${userId}?estado=${estadoFiltro}`;
+      }
+
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -41,7 +48,6 @@ export default function Proyectos({ onVolver }) {
     }
   };
 
-  // Cada vez que cambie el filtro de estado, recargamos de la BD
   useEffect(() => {
     cargarProyectos();
   }, [estadoFiltro]);
@@ -79,10 +85,12 @@ export default function Proyectos({ onVolver }) {
         <div className="bg-slate-50 border-b border-slate-100 p-4 flex flex-wrap gap-4 items-center justify-between text-xs font-semibold text-slate-600">
           
           <div className="flex flex-wrap items-center gap-6">
-            {/* Título de sección */}
+            {/* Título de sección dinámico */}
             <div className="flex items-center gap-2">
               <span className="text-xl bg-teal-50 text-[#619c8f] p-1.5 rounded-lg">🟢</span>
-              <span className="font-bold uppercase text-slate-700 tracking-wide text-sm">Mis Proyectos</span>
+              <span className="font-bold uppercase text-slate-700 tracking-wide text-sm">
+                {usuario?.rol === 'Admin' ? 'Gestión de Proyectos' : 'Mis Proyectos'}
+              </span>
             </div>
 
             {/* Selector de Estado */}
@@ -117,6 +125,16 @@ export default function Proyectos({ onVolver }) {
 
           {/* Botonera de Acciones Rápidas */}
           <div className="flex items-center gap-2">
+            {/* Botón exclusivo para Administradores */}
+            {usuario?.rol === 'Admin' && (
+              <button 
+                onClick={() => alert('Abriendo formulario para registrar nuevo proyecto institucional...')}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition-all flex items-center gap-1 border border-emerald-700"
+              >
+                ➕ Agregar Proyecto
+              </button>
+            )}
+
             <button 
               onClick={handleDocumentacion}
               className={`px-3 py-1.5 font-bold rounded-lg transition-all border flex items-center gap-1 shadow-sm ${
@@ -143,7 +161,7 @@ export default function Proyectos({ onVolver }) {
 
         </div>
 
-        {/* Alerta de Divisa (Copia exacta de Sinfoni) */}
+        {/* Alerta de Divisa */}
         <div className="bg-amber-50 border-b border-amber-100/60 px-6 py-2.5 flex items-center gap-2 text-[11px] text-amber-800 font-bold tracking-wide">
           <span>ℹ️</span> Los importes aparecen en PESO COLOMBIANO (COP)
         </div>
@@ -156,7 +174,11 @@ export default function Proyectos({ onVolver }) {
         ) : proyectos.length === 0 ? (
           <div className="p-20 text-center text-slate-400 text-xs font-bold bg-slate-50/30 uppercase tracking-widest space-y-2">
             <div className="text-3xl opacity-40">💼</div>
-            <p>No se encontraron proyectos registrados como director bajo este estado.</p>
+            <p>
+              {usuario?.rol === 'Admin' 
+                ? 'No se encontraron proyectos globales registrados en el sistema bajo este estado.' 
+                : 'No se encontraron proyectos registrados como director bajo este estado.'}
+            </p>
           </div>
         ) : (
           <div className="w-full overflow-hidden">
@@ -181,28 +203,19 @@ export default function Proyectos({ onVolver }) {
                         esSeleccionado ? 'bg-teal-50/60 hover:bg-teal-50' : 'hover:bg-slate-50/70'
                       }`}
                     >
-                      {/* Código con ícono de red */}
                       <td className="px-6 py-4 text-[#c23616] font-bold whitespace-nowrap align-middle">
                         <span className="mr-1.5 opacity-70">🌐</span>
                         {proj.codigo}
                       </td>
-                      
-                      {/* Título */}
                       <td className="px-6 py-4 font-semibold text-slate-700 uppercase tracking-wide text-[11px] leading-snug align-middle break-words">
                         {proj.titulo}
                       </td>
-                      
-                      {/* Fecha Inicio */}
                       <td className="px-6 py-4 text-slate-500 font-medium text-center align-middle">
                         {proj.fecha_inicio ? new Date(proj.fecha_inicio).toLocaleDateString('es-CO', { timeZone: 'UTC' }) : '—'}
                       </td>
-                      
-                      {/* Fecha Fin */}
                       <td className="px-6 py-4 text-slate-500 font-medium text-center align-middle">
                         {proj.fecha_fin ? new Date(proj.fecha_fin).toLocaleDateString('es-CO', { timeZone: 'UTC' }) : '—'}
                       </td>
-
-                      {/* Estado visual en píldora */}
                       <td className="px-6 py-4 text-center align-middle">
                         <span className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                           proj.estado === 'Activo' ? 'bg-green-100 text-green-700' :
@@ -220,7 +233,6 @@ export default function Proyectos({ onVolver }) {
           </div>
         )}
       </div>
-
     </div>
   );
 }
