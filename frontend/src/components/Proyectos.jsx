@@ -110,36 +110,43 @@ export default function Proyectos({ usuario, onVolver }) {
     );
   });
 
-  // ACCIÓN: Exportar a archivo CSV (Excel) ejecutable de forma nativa
+  // ACCIÓN: Exportar a archivo CSV (Excel) optimizado para sistemas en español
   const handleExportarExcel = () => {
     if (proyectosFiltrados.length === 0) {
       mostrarMensajeTemporal('⚠️ No hay filas disponibles para exportar.');
       return;
     }
 
-    // Cabeceras del reporte
+    // Cabeceras usando PUNTO Y COMA (Anulando el problema de la mezcla de celdas)
     const headers = ['CODIGO', 'TITULO', 'FECHA COMIENZO', 'FECHA FINALIZACION', 'ESTADO'];
     
-    // Convertir filas respetando las comillas por los textos largos
+    // Convertir las filas del estado actual respetando los filtros aplicados
     const rows = proyectosFiltrados.map(p => [
       p.codigo,
       `"${p.titulo.replace(/"/g, '""')}"`,
       p.fecha_inicio ? new Date(p.fecha_inicio).toISOString().split('T')[0] : '—',
       p.fecha_fin ? new Date(p.fecha_fin).toISOString().split('T')[0] : '—',
       p.estado
-    ].join(','));
+    ].join(';'));
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows].join('\n');
+    // \uFEFF soluciona las tildes y 'sep=;' obliga a Excel a separar las columnas limpiamente
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + ['sep=;', headers.join(';'), ...rows].join('\n');
     const encodedUri = encodeURI(csvContent);
+    
+    // Capturar tiempo exacto (horas y minutos) para evitar nombres duplicados
+    const ahora = new Date();
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    const fechaStr = ahora.toISOString().split('T')[0];
     
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Reporte_Proyectos_ArchiveX_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Reporte_Proyectos_ArchiveX_${fechaStr}_${horas}-${minutos}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     
-    mostrarMensajeTemporal('📊 ¡Reporte Excel (.CSV) descargado exitosamente!');
+    mostrarMensajeTemporal('📊 ¡Reporte Excel actualizado y descargado exitosamente!');
   };
 
   // Guardar nuevo proyecto (Modal)
