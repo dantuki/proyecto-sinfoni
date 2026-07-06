@@ -1,16 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const { 
-  obtenerTodosLosProyectos, // 👈 Importamos la nueva ruta global
+  obtenerTodosLosProyectos, 
   obtenerMisProyectos, 
-  obtenerMisParticipaciones 
+  obtenerMisParticipaciones,
+  crearProyecto 
 } = require('../controllers/proyecto.controller');
 const verificarToken = require('../middleware/authMiddleware');
 
-// Ruta global para el portafolio completo (Admin)
+// Rutas globales del portafolio (Peticiones raíz)
 router.get('/', verificarToken, obtenerTodosLosProyectos);
+router.post('/', verificarToken, crearProyecto);
 
-// Rutas específicas por ID de usuario (Profesores)
+// Rutas de segmentación para perfiles docentes por ID
 router.get('/director/:id', verificarToken, obtenerMisProyectos);
 router.get('/participante/:id', verificarToken, obtenerMisParticipaciones);
 
