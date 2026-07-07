@@ -124,6 +124,27 @@ CREATE TABLE IF NOT EXISTS proyectos_participantes (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 11 tabla de documentacion de proyectos 
+CREATE TABLE IF NOT EXISTS documentos_proyecto (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  proyecto_id INT NOT NULL,
+  nombre_archivo VARCHAR(255) NOT NULL,
+  tipo_documento VARCHAR(100) NOT NULL,
+  fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
+);
+-- 12 tabla de participaciones 
+CREATE TABLE IF NOT EXISTS participaciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    proyecto_id INT NOT NULL,
+    usuario_id INT NOT NULL, 
+    rol_proyecto VARCHAR(100) NOT NULL, 
+    horas_dedicacion INT NOT NULL,
+    fecha_vinculacion DATE NOT NULL,
+    estado_vinculacion VARCHAR(50) DEFAULT 'Activo',
+    FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
+);
+
 
 -- ========================================================
 -- INSERCIÓN DE DATOS INICIALES SEGUROS (SIN DUPLICADOS)
@@ -143,3 +164,9 @@ INSERT IGNORE INTO convocatorias (titulo, tipo, fecha_inicio, fecha_cierre, base
 INSERT IGNORE INTO login (usuario_id, email, password) VALUES
 (1, 'admin@sinfoni.com', '$2b$10$y6R7qZ92M68kYI6kL8wYdeXpDbeX9Z2U3R4h5M6N7O8P2qwErTyUi'),
 (2, 'evaluador@sinfoni.com', '$2b$10$y6R7qZ92M68kYI6kL8wYdeXpDbeX9Z2U3R4h5M6N7O8P2qwErTyUi');
+
+INSERT INTO sinfoni_db.proyectos (codigo, titulo, director_id, fecha_inicio, fecha_fin, estado) 
+VALUES 
+('INV2494', 'ANÁLISIS DEL ENTORNO ACTUAL EN EL ÁMBITO DEPARTAMENTAL, NACIONAL', 1, '2019-07-10', '2020-07-10', 'Activo'),
+('INV3280', 'IMPLEMENTACIÓN DE UN MODELO DE APROPIACIÓN SOCIAL DEL CONOCIMIENTO', 1, '2022-05-01', '2025-11-30', 'Activo');
+
