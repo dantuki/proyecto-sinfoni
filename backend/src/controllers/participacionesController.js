@@ -1,87 +1,68 @@
 const db = require('../config/db');
 
-// 1. Obtener todas las vinculaciones del sistema (Vista para el Administrador)
-exports.getParticipacionesGlobales = async (req, res) => {
-  const { rol_proyecto } = req.query;
-  
-  let query = `
-    SELECT part.*, p.codigo AS codigo_proyecto, p.titulo AS titulo_proyecto 
-    FROM participaciones part
-    JOIN proyectos p ON part.proyecto_id = p.id
-  `;
-  const params = [];
-
-  if (rol_proyecto) {
-    query += ` WHERE part.rol_proyecto = ?`;
-    params.push(rol_proyecto);
-  }
-
+// 1. Obtener participaciones segmentadas por Rol
+exports.getParticipaciones = async (req, res) => {
   try {
+    // req.usuario es inyectado automáticamente por tu authMiddleware
+    const { id: usuarioId, rol } = req.usuario; 
+
+    let query = `
+      SELECT part.*, 
+             p.codigo AS codigo_proyecto, 
+             p.titulo AS titulo_proyecto,
+             u.nombre AS nombre_usuario,
+             u.correo AS correo_usuario
+      FROM participaciones part
+      JOIN proyectos p ON part.proyecto_id = p.id
+      JOIN usuarios u ON part.usuario_id = u.id
+    `;
+    
+    const params = [];
+
+    // Si no es administrador, restringimos la consulta a su propio ID de usuario
+    if (rol !== 'Administrador' && rol !== 'Admin') {
+      query += ` WHERE part.usuario_id = ?`;
+      params.push(usuarioId);
+    }
+
     const [results] = await db.query(query, params);
-    res.json({ data: results });
+    res.json({ success: true, data: results });
   } catch (err) {
-    console.error('Error en getParticipacionesGlobales:', err);
-    res.status(500).json({ error: 'Error interno de SINFONI al recopilar asignaciones globales.' });
+    console.error('Error en getParticipaciones:', err);
+    res.status(500).json({ error: 'Error interno de SINFONI al obtener las vinculaciones.' });
   }
 };
 
-// 2. Obtener vinculaciones específicas de un docente (Vista restringida para Profesor)
-exports.getParticipacionesPorDocente = async (req, res) => {
-  const { userId } = req.params;
-  const { rol_proyecto } = req.query;
-
-  let query = `
-    SELECT part.*, p.codigo AS codigo_proyecto, p.titulo AS titulo_proyecto 
-    FROM participaciones part
-    JOIN proyectos p ON part.proyecto_id = p.id
-    WHERE part.usuario_id = ?
-  `;
-  const params = [userId];
-
-  if (rol_proyecto) {
-    query += ` AND part.rol_proyecto = ?`;
-    params.push(rol_proyecto);
-  }
-
-  try {
-    const [results] = await db.query(query, params);
-    res.json({ data: results });
-  } catch (err) {
-    console.error('Error en getParticipacionesPorDocente:', err);
-    res.status(500).json({ error: 'Error interno al procesar el historial de vinculación docente.' });
-  }
-};
-
-// 3. Crear e indexar una nueva vinculación de investigador (Acción exclusiva de Admin)
-exports.crearVinculacionInvestigador = async (req, res) => {
+// 2. Crear una nueva vinculación de investigador (Acción de Admin)
+exports.crearVinculacion = async (req, res) => {
   const { proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion, estado_vinculacion } = req.body;
-  
+
   if (!proyecto_id || !usuario_id || !rol_proyecto || !horas_dedicacion || !fecha_vinculacion) {
-    return res.status(400).json({ error: 'Todos los campos requeridos deben ser completados en el formulario.' });
+    return res.status(400).json({ error: 'Todos los campos obligatorios deben ser completados.' });
   }
 
-  const query = `
-    INSERT INTO participaciones (proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion, estado_vinculacion)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
-  
-  const valores = [
-    proyecto_id, 
-    usuario_id, 
-    rol_proyecto, 
-    horas_dedicacion, 
-    fecha_vinculacion, 
-    estado_vinculacion || 'Activo'
-  ];
-
   try {
+    const query = `
+      INSERT INTO participaciones (proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion, estado_vinculacion)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const valores = [
+      proyecto_id, 
+      usuario_id, 
+      rol_proyecto, 
+      horas_dedicacion, 
+      fecha_vinculacion, 
+      estado_vinculacion || 'Activo'
+    ];
+
     const [result] = await db.query(query, valores);
-    res.status(201).json({ 
-      message: '¡Investigador vinculado y registrado de manera exitosa en el proyecto!', 
-      id: result.insertId 
+    res.status(201).json({
+      success: true,
+      message: '¡Investigador vinculado con éxito al proyecto de investigación!',
+      id: result.insertId
     });
   } catch (err) {
-    console.error('Error en crearVinculacionInvestigador:', err);
-    res.status(500).json({ error: 'Error de consistencia de llaves en la base de datos de MySQL.' });
+    console.error('Error en crearVinculacion:', err);
+    res.status(500).json({ error: 'Error de consistencia al insertar la vinculación en MySQL.' });
   }
 };
