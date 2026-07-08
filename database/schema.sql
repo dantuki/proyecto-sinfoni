@@ -144,6 +144,16 @@ CREATE TABLE IF NOT EXISTS participaciones (
     estado_vinculacion VARCHAR(50) DEFAULT 'Activo',
     FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
 );
+-- 13. Tabla para manejar múltiples archivos por solicitud de convocatoria
+CREATE TABLE IF NOT EXISTS documentos_solicitud (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    solicitud_id INT NOT NULL,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    tipo_documento ENUM('Presupuesto', 'Cronograma', 'Honestidad Creativa', 'Plan de Inversión', 'Otros') NOT NULL,
+    archivo_url VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE
+);
 
 
 -- ========================================================

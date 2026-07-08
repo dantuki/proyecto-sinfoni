@@ -3,15 +3,25 @@ const db = require('../config/db');
 // 1. Obtener participaciones segmentadas por Rol
 exports.getParticipaciones = async (req, res) => {
   try {
-    // req.usuario es inyectado automáticamente por tu authMiddleware
-    const { id: usuarioId, rol } = req.usuario; 
+    // Protección contra undefined en el middleware
+    const usuarioLogueado = req.usuario || req.user; 
 
+    if (!usuarioLogueado) {
+      console.log('⚠️ [SINFONI DEBUG]: No se detectó la sesión del usuario.');
+      return res.status(401).json({ error: 'No se encontraron las credenciales del usuario.' });
+    }
+
+    // Extraemos el id y el rol mapeados del token
+    const usuarioId = usuarioLogueado.id || usuarioLogueado.usuarioId || usuarioLogueado.id_usuario;
+    const rol = usuarioLogueado.rol;
+
+    // Consulta adaptada al 100% a tu script SQL real
     let query = `
       SELECT part.*, 
              p.codigo AS codigo_proyecto, 
              p.titulo AS titulo_proyecto,
-             u.nombre AS nombre_usuario,
-             u.correo AS correo_usuario
+             u.nombre_completo AS nombre_usuario,
+             u.email AS correo_usuario
       FROM participaciones part
       JOIN proyectos p ON part.proyecto_id = p.id
       JOIN usuarios u ON part.usuario_id = u.id
@@ -19,8 +29,8 @@ exports.getParticipaciones = async (req, res) => {
     
     const params = [];
 
-    // Si no es administrador, restringimos la consulta a su propio ID de usuario
-    if (rol !== 'Administrador' && rol !== 'Admin') {
+    // Según tu SQL, el rol es estrictamente 'Admin'
+    if (rol !== 'Admin') {
       query += ` WHERE part.usuario_id = ?`;
       params.push(usuarioId);
     }
@@ -28,8 +38,8 @@ exports.getParticipaciones = async (req, res) => {
     const [results] = await db.query(query, params);
     res.json({ success: true, data: results });
   } catch (err) {
-    console.error('Error en getParticipaciones:', err);
-    res.status(500).json({ error: 'Error interno de SINFONI al obtener las vinculaciones.' });
+    console.error('❌ Error en getParticipaciones:', err);
+    res.status(500).json({ error: 'Error interno del servidor al procesar la solicitud.' });
   }
 };
 
@@ -58,11 +68,11 @@ exports.crearVinculacion = async (req, res) => {
     const [result] = await db.query(query, valores);
     res.status(201).json({
       success: true,
-      message: '¡Investigador vinculado con éxito al proyecto de investigación!',
+      message: '¡Investigador vinculado con éxito al proyecto!',
       id: result.insertId
     });
   } catch (err) {
-    console.error('Error en crearVinculacion:', err);
-    res.status(500).json({ error: 'Error de consistencia al insertar la vinculación en MySQL.' });
+    console.error('❌ Error en crearVinculacion:', err);
+    res.status(500).json({ error: 'Error de consistencia al insertar en la base de datos.' });
   }
 };

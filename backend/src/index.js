@@ -10,8 +10,9 @@ const convocatoriaRoutes = require('./routes/convocatoriaRoutes');
 const solicitudRoutes = require('./routes/solicitudRoutes');
 const asignacionRoutes = require('./routes/asignacionRoutes');
 const authRoutes = require('./routes/authRoutes'); // Módulo de Autenticación
-const noticiaRoutes = require('./routes/noticiaRoutes'); // <- NUEVO: Módulo de Recursos Humanos / Noticias
+const noticiaRoutes = require('./routes/noticiaRoutes'); // Módulo de Recursos Humanos / Noticias
 const proyectoRoutes = require('./routes/proyecto.routes');
+const participacionesRoutes = require('./routes/participaciones.routes'); // 👈 NUEVO: Importamos tus rutas de participaciones
 
 dotenv.config();
 const app = express();
@@ -33,8 +34,9 @@ app.use('/api/convocatorias', convocatoriaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/asignaciones', asignacionRoutes);
 app.use('/api/auth', authRoutes); // Montaje del endpoint de Login
-app.use('/api/noticias', noticiaRoutes); // <- NUEVO: Montaje de la API de noticias personales
+app.use('/api/noticias', noticiaRoutes); // Montaje de la API de noticias personales
 app.use('/api/proyectos', proyectoRoutes);
+app.use('/api/participaciones', participacionesRoutes); // 👈 NUEVO: Montamos el endpoint para el frontend
 
 // RUTA DE CONFIGURACIÓN / PRUEBA DE DISPONIBILIDAD
 app.get('/', (req, res) => {
