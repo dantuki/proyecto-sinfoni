@@ -5,7 +5,7 @@ import DatosPersonales from './components/DatosPersonales';
 import Noticias from './components/Noticias';
 import FormularioSolicitud from './components/FormularioSolicitud';
 import Proyectos from './components/Proyectos';
-import Participaciones from './components/Participaciones'; // 👈 NUEVO: Importación del componente
+import Participaciones from './components/Participaciones';
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -28,7 +28,7 @@ function App() {
       case 'proyectos':
         return <Proyectos usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
       case 'participaciones':
-        return <Participaciones usuario={usuario} onVolver={() => setVistaActual('inicio')} />; // 👈 NUEVO: Conexión de la vista real
+        return <Participaciones usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -61,7 +61,6 @@ function App() {
             🏠 Inicio / Dashboard
           </button>
 
-          {/* 👈 NUEVO: Botón de acceso directo para Investigadores / Participaciones */}
           <button 
             onClick={() => setVistaActual('participaciones')} 
             className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'participaciones' ? 'bg-[#5B9BD5]' : ''}`}
