@@ -1,5 +1,4 @@
 const InicioCards = ({ cambiarVista, usuario }) => {
-  // Evaluamos si el rol del usuario es Administrador
   const esAdmin = usuario?.rol === 'Admin';
 
   const categorias = [
@@ -17,9 +16,8 @@ const InicioCards = ({ cambiarVista, usuario }) => {
       icono: '🌐',
       color: 'from-indigo-500 to-indigo-600',
       opciones: [
-        // Si es Admin cambia el texto a "Gestión de Proyectos", si es Profesor dice "Mis Proyectos"
         { nombre: esAdmin ? 'Gestión de Proyectos' : 'Mis Proyectos', vista: 'proyectos' },
-        { nombre: esAdmin ? 'Control de Participaciones' : 'Mis Participaciones', vista: 'en_construccion' }
+        { nombre: esAdmin ? 'Control de Participaciones' : 'Mis Participaciones', vista: 'participaciones' } // 👈 CORREGIDO: Cambiado de 'en_construccion' a 'participaciones'
       ]
     },
     {
