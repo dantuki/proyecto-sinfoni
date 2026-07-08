@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
-export default function Participaciones() {
+export default function Participaciones({ usuario }) {
   const [participaciones, setParticipaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
   
-  // Estados para el formulario de nueva vinculación
   const [formData, setFormData] = useState({
     proyecto_id: '',
     usuario_id: '',
@@ -16,25 +15,28 @@ export default function Participaciones() {
     estado_vinculacion: 'Activo'
   });
 
-  // Recuperamos la información del usuario e investigadores desde el almacenamiento local
   const token = localStorage.getItem('token');
-  const usuarioLogueado = JSON.parse(localStorage.getItem('usuario')) || {};
-  const esAdmin = usuarioLogueado.rol === 'Administrador' || usuarioLogueado.rol === 'Admin';
+  const esAdmin = usuario?.rol === 'Admin' || usuario?.rol === 'Administrador';
+  const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
 
   const cargarParticipaciones = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await fetch('http://localhost:5000/api/participaciones', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (data.success) {
-        setParticipaciones(data.data);
+      if (res.ok && data.success) {
+        setParticipaciones(data.data || []);
       } else {
-        setError(data.error || 'Error al cargar las vinculaciones.');
+        // Muestra un estado limpio si aún no hay registros o falla la respuesta
+        setParticipaciones([]);
+        if (!res.ok) setError(data.error || 'No se pudieron consultar las participaciones.');
       }
     } catch (err) {
-      setError('No se pudo establecer conexión con el servidor backend.');
+      console.error('Error al conectar con backend:', err);
+      setError('Verifica que el servidor Backend (Node.js) esté ejecutándose en http://localhost:5000');
     } finally {
       setLoading(false);
     }
@@ -56,7 +58,7 @@ export default function Participaciones() {
         body: JSON.stringify(formData)
       });
       const data = await res.json();
-      if (data.success) {
+      if (res.ok && data.success) {
         alert(data.message);
         setModalAbierto(false);
         setFormData({ proyecto_id: '', usuario_id: '', rol_proyecto: 'Investigador Principal', horas_dedicacion: '', fecha_vinculacion: '', estado_vinculacion: 'Activo' });
@@ -69,15 +71,15 @@ export default function Participaciones() {
     }
   };
 
-  if (loading) return <div className="p-6 text-center text-gray-600 font-medium">Cargando registros de SINFONI...</div>;
+  if (loading) return <div className="p-6 text-center text-white font-medium">Cargando registros de SINFONI...</div>;
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-6 bg-white rounded-xl shadow-lg w-full max-w-5xl">
+      <div className="flex justify-between items-center mb-6 border-b pb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Módulo de Participaciones e Investigadores</h2>
           <p className="text-sm text-gray-500">
-            {esAdmin ? 'Vista de control global de investigadores asignados.' : `Proyectos asignados al docente: ${usuarioLogueado.nombre}`}
+            {esAdmin ? 'Vista de control global de investigadores asignados.' : `Proyectos asignados al docente: ${nombreUsuario}`}
           </p>
         </div>
         {esAdmin && (
@@ -129,14 +131,14 @@ export default function Participaciones() {
         </div>
       )}
 
-      {/* MODAL DE VINCULACIÓN (Solo visible para Administradores) */}
+      {/* MODAL DE VINCULACIÓN */}
       {modalAbierto && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Nueva Vinculación de Investigador</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Proyecto (Numérico)</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Proyecto</label>
                 <input
                   type="number"
                   required
@@ -147,7 +149,7 @@ export default function Participaciones() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Docente / Usuario (Numérico)</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Docente / Usuario</label>
                 <input
                   type="number"
                   required
