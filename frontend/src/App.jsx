@@ -5,6 +5,7 @@ import DatosPersonales from './components/DatosPersonales';
 import Noticias from './components/Noticias';
 import FormularioSolicitud from './components/FormularioSolicitud';
 import Proyectos from './components/Proyectos';
+import Participaciones from './components/Participaciones'; // 👈 NUEVO: Importación del componente
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -25,7 +26,9 @@ function App() {
       case 'formulario':
         return <FormularioSolicitud usuario={usuario} />;
       case 'proyectos':
-        return <Proyectos usuario={usuario} onVolver={() => setVistaActual('inicio')} />; // 👈 Corregido: Ahora pasa el usuario completo
+        return <Proyectos usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
+      case 'participaciones':
+        return <Participaciones usuario={usuario} onVolver={() => setVistaActual('inicio')} />; // 👈 NUEVO: Conexión de la vista real
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -51,8 +54,19 @@ function App() {
           </span>
         </div>
         <nav className="flex-1 overflow-y-auto py-4">
-          <button onClick={() => setVistaActual('inicio')} className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2">
+          <button 
+            onClick={() => setVistaActual('inicio')} 
+            className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'inicio' ? 'bg-[#5B9BD5]' : ''}`}
+          >
             🏠 Inicio / Dashboard
+          </button>
+
+          {/* 👈 NUEVO: Botón de acceso directo para Investigadores / Participaciones */}
+          <button 
+            onClick={() => setVistaActual('participaciones')} 
+            className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'participaciones' ? 'bg-[#5B9BD5]' : ''}`}
+          >
+            📋 Mis Participaciones
           </button>
           
           {usuario.rol === 'Admin' && (
