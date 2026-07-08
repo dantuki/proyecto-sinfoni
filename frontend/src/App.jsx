@@ -6,6 +6,7 @@ import Noticias from './components/Noticias';
 import FormularioSolicitud from './components/FormularioSolicitud';
 import Proyectos from './components/Proyectos';
 import Participaciones from './components/Participaciones';
+import Convocatorias from './Convocatorias';
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
