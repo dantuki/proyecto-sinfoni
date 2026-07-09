@@ -6,7 +6,7 @@ import Noticias from './components/Noticias';
 import FormularioSolicitud from './components/FormularioSolicitud';
 import Proyectos from './components/Proyectos';
 import Participaciones from './components/Participaciones';
-import Convocatorias from './Convocatorias';
+import Convocatorias from "./components/Convocatorias";
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -30,6 +30,8 @@ function App() {
         return <Proyectos usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
       case 'participaciones':
         return <Participaciones usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
+      case 'convocatorias':
+        return <Convocatorias usuario={usuario} />;
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -60,6 +62,13 @@ function App() {
             className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'inicio' ? 'bg-[#5B9BD5]' : ''}`}
           >
             🏠 Inicio / Dashboard
+          </button>
+
+          <button 
+            onClick={() => setVistaActual('convocatorias')} 
+            className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'convocatorias' ? 'bg-[#5B9BD5]' : ''}`}
+          >
+            📢 Radicar Convocatoria
           </button>
 
           <button 
