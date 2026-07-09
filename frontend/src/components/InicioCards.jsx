@@ -46,7 +46,7 @@ const InicioCards = ({ cambiarVista, usuario }) => {
             {cat.opciones.map((opc, i) => (
               <button 
                 key={i}
-                onClick={() => cambiarVista(opc.vista)}
+                onClick={() => cambiarVista('convocatorias')}
                 className="text-sm font-semibold text-slate-600 hover:text-blue-600 py-1 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors"
               >
                 {opc.nombre}
