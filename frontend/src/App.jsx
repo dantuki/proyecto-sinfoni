@@ -7,14 +7,21 @@ import FormularioSolicitud from './components/FormularioSolicitud';
 import Proyectos from './components/Proyectos';
 import Participaciones from './components/Participaciones';
 import Convocatorias from "./components/Convocatorias";
+import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
   const [vistaActual, setVistaActual] = useState('inicio');
+  const [convocatoriaSeleccionada, setConvocatoriaSeleccionada] = useState(null);
 
   if (!usuario) {
     return <Login alAutenticar={setUsuario} />;
   }
+
+  const irAPostulacion = (convocatoria) => {
+    setConvocatoriaSeleccionada(convocatoria);
+    setVistaActual('formulario_radicacion');
+  };
 
   const renderizarVista = () => {
     switch(vistaActual) {
@@ -30,8 +37,10 @@ function App() {
         return <Proyectos usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
       case 'participaciones':
         return <Participaciones usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
-      case 'convocatorias':
-        return <Convocatorias usuario={usuario} />;
+      case 'convocatorias_abiertas':
+        return <ConvocatoriasAbiertas alSeleccionarConvocatoria={irAPostulacion} />;
+      case 'formulario_radicacion':
+        return <Convocatorias usuario={usuario} convocatoria={convocatoriaSeleccionada} />;
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -65,10 +74,10 @@ function App() {
           </button>
 
           <button 
-            onClick={() => setVistaActual('convocatorias')} 
-            className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'convocatorias' ? 'bg-[#5B9BD5]' : ''}`}
+            onClick={() => setVistaActual('convocatorias_abiertas')} 
+            className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'convocatorias_abiertas' ? 'bg-[#5B9BD5]' : ''}`}
           >
-            📢 Radicar Convocatoria
+            📢 Convocatorias Abiertas
           </button>
 
           <button 
