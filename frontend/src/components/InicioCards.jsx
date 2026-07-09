@@ -17,7 +17,7 @@ const InicioCards = ({ cambiarVista, usuario }) => {
       color: 'from-indigo-500 to-indigo-600',
       opciones: [
         { nombre: esAdmin ? 'Gestión de Proyectos' : 'Mis Proyectos', vista: 'proyectos' },
-        { nombre: esAdmin ? 'Control de Participaciones' : 'Mis Participaciones', vista: 'participaciones' } // 👈 CORREGIDO: Cambiado de 'en_construccion' a 'participaciones'
+        { nombre: esAdmin ? 'Control de Participaciones' : 'Mis Participaciones', vista: 'participaciones' }
       ]
     },
     {
@@ -25,8 +25,8 @@ const InicioCards = ({ cambiarVista, usuario }) => {
       icono: '📑',
       color: 'from-green-500 to-green-600',
       opciones: [
-        { nombre: esAdmin ? 'Revisar Solicitudes' : 'Mis Solicitudes (Formulario)', vista: 'formulario' },
-        { nombre: 'Convocatorias Abiertas', vista: 'en_construccion' }
+        { nombre: esAdmin ? 'Revisar Solicitudes' : 'Mis Solicitudes (Historial)', vista: 'participaciones' },
+        { nombre: 'Convocatorias Abiertas', vista: 'convocatorias_abiertas' }
       ]
     }
   ];
@@ -46,7 +46,7 @@ const InicioCards = ({ cambiarVista, usuario }) => {
             {cat.opciones.map((opc, i) => (
               <button 
                 key={i}
-                onClick={() => cambiarVista('convocatorias')}
+                onClick={() => cambiarVista(opc.vista)}
                 className="text-sm font-semibold text-slate-600 hover:text-blue-600 py-1 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors"
               >
                 {opc.nombre}
