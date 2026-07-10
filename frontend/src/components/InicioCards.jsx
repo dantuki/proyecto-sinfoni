@@ -1,6 +1,17 @@
 const InicioCards = ({ cambiarVista, usuario }) => {
   const esAdmin = usuario?.rol === 'Admin';
 
+  // Opciones base para la tarjeta de convocatorias
+  const opcionesConvocatorias = [
+    { nombre: esAdmin ? 'Revisar Solicitudes' : 'Mis Solicitudes (Historial)', vista: 'participaciones' },
+    { nombre: 'Convocatorias Abiertas', vista: 'convocatorias_abiertas' }
+  ];
+
+  // Si es administrador, le inyectamos la opción de crear convocatoria al menú de la tarjeta
+  if (esAdmin) {
+    opcionesConvocatorias.push({ nombre: 'Crear Convocatoria', vista: 'crear_convocatoria' });
+  }
+
   const categorias = [
     {
       titulo: 'Recursos Humanos',
@@ -24,10 +35,7 @@ const InicioCards = ({ cambiarVista, usuario }) => {
       titulo: 'Convocatorias',
       icono: '📑',
       color: 'from-green-500 to-green-600',
-      opciones: [
-        { nombre: esAdmin ? 'Revisar Solicitudes' : 'Mis Solicitudes (Historial)', vista: 'participaciones' },
-        { nombre: 'Convocatorias Abiertas', vista: 'convocatorias_abiertas' }
-      ]
+      opciones: opcionesConvocatorias // Usa la lista dinámica corregida
     }
   ];
 

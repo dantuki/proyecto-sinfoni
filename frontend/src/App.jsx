@@ -8,6 +8,7 @@ import Proyectos from './components/Proyectos';
 import Participaciones from './components/Participaciones';
 import Convocatorias from "./components/Convocatorias";
 import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
+import CrearConvocatoria from "./components/CrearConvocatoria"; // Importado para el admin
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -41,6 +42,8 @@ function App() {
         return <ConvocatoriasAbiertas alSeleccionarConvocatoria={irAPostulacion} />;
       case 'formulario_radicacion':
         return <Convocatorias usuario={usuario} convocatoria={convocatoriaSeleccionada} />;
+      case 'crear_convocatoria': // Renderiza tu nuevo formulario
+        return <CrearConvocatoria alFinalizar={() => setVistaActual('inicio')} />;
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -88,9 +91,17 @@ function App() {
           </button>
           
           {usuario.rol === 'Admin' && (
-            <div className="mt-4 px-6 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Panel Admin
-            </div>
+            <>
+              <div className="mt-4 px-6 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Panel Admin
+              </div>
+              <button 
+                onClick={() => setVistaActual('crear_convocatoria')} 
+                className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'crear_convocatoria' ? 'bg-[#5B9BD5]' : ''}`}
+              >
+                ➕ Crear Convocatoria
+              </button>
+            </>
           )}
         </nav>
       </aside>
