@@ -8,7 +8,7 @@ import Proyectos from './components/Proyectos';
 import Participaciones from './components/Participaciones';
 import Convocatorias from "./components/Convocatorias";
 import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
-import CrearConvocatoria from "./components/CrearConvocatoria"; // Importado para el admin
+import CrearConvocatoria from "./components/CrearConvocatoria";
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -22,6 +22,11 @@ function App() {
   const irAPostulacion = (convocatoria) => {
     setConvocatoriaSeleccionada(convocatoria);
     setVistaActual('formulario_radicacion');
+  };
+
+  const irAEdicion = (convocatoria) => {
+    setConvocatoriaSeleccionada(convocatoria);
+    setVistaActual('crear_convocatoria');
   };
 
   const renderizarVista = () => {
@@ -39,11 +44,25 @@ function App() {
       case 'participaciones':
         return <Participaciones usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
       case 'convocatorias_abiertas':
-        return <ConvocatoriasAbiertas alSeleccionarConvocatoria={irAPostulacion} />;
+        return (
+          <ConvocatoriasAbiertas 
+            usuario={usuario}
+            alSeleccionarConvocatoria={irAPostulacion} 
+            alEditarConvocatoria={irAEdicion}
+          />
+        );
       case 'formulario_radicacion':
         return <Convocatorias usuario={usuario} convocatoria={convocatoriaSeleccionada} />;
-      case 'crear_convocatoria': // Renderiza tu nuevo formulario
-        return <CrearConvocatoria alFinalizar={() => setVistaActual('inicio')} />;
+      case 'crear_convocatoria': 
+        return (
+          <CrearConvocatoria 
+            convocatoriaAEditar={convocatoriaSeleccionada}
+            alFinalizar={() => {
+              setConvocatoriaSeleccionada(null);
+              setVistaActual('convocatorias_abiertas');
+            }} 
+          />
+        );
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -96,7 +115,10 @@ function App() {
                 Panel Admin
               </div>
               <button 
-                onClick={() => setVistaActual('crear_convocatoria')} 
+                onClick={() => {
+                  setConvocatoriaSeleccionada(null); // Nos aseguramos de que entre en modo creación
+                  setVistaActual('crear_convocatoria');
+                }} 
                 className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'crear_convocatoria' ? 'bg-[#5B9BD5]' : ''}`}
               >
                 ➕ Crear Convocatoria
