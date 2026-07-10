@@ -2,6 +2,16 @@ const Solicitud = require('../models/solicitudModel');
 const Trazabilidad = require('../models/trazabilidadModel'); 
 const db = require('../config/db'); // Importación para la tabla relacional de archivos
 
+// Función helper para generar radicados de solicitud aleatorios (Fino y automático)
+const generarRadicadoRandom = (prefijo = 'SOL') => {
+  const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let resultado = '';
+  for (let i = 0; i < 5; i++) {
+    resultado += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+  }
+  return `${prefijo}-${resultado}`;
+};
+
 // 1. GET: Listar todas las solicitudes
 const getSolicitudes = async (req, res) => {
   try {
@@ -29,18 +39,26 @@ const getSolicitudById = async (req, res) => {
 // 3. ADD: Crear una nueva solicitud con Múltiples Archivos Dinámicos
 const createSolicitud = async (req, res) => {
   try {
-    const { usuario_id, convocatoria_id, sede_id, num_solicitud, observaciones, estado, tipos_documentos } = req.body;
+    let { usuario_id, convocatoria_id, sede_id, num_solicitud, observaciones, estado, tipos_documentos } = req.body;
 
-    if (!usuario_id || !convocatoria_id || !sede_id || !num_solicitud) {
+    // Quitamos num_solicitud de la validación estricta porque ahora puede ser automático
+    if (!usuario_id || !convocatoria_id || !sede_id) {
       return res.status(400).json({ 
         status: "error", 
-        message: "Los campos usuario_id, convocatoria_id, sede_id y num_solicitud son obligatorios" 
+        message: "Los campos usuario_id, convocatoria_id y sede_id son obligatorios" 
       });
+    }
+
+    // Si no viene radicado o viene vacío, el sistema lo genera solo
+    if (!num_solicitud || num_solicitud.trim() === "") {
+      num_solicitud = generarRadicadoRandom();
+    } else {
+      num_solicitud = num_solicitud.trim().toUpperCase();
     }
 
     const estadoInicial = estado || 'Borrador';
     
-    // Guardamos la solicitud limpia en la tabla madre (tu modelo ya no maneja doc_par_1 ni 2)
+    // Guardamos la solicitud limpia en la tabla madre
     const newId = await Solicitud.create({ 
       usuario_id, 
       convocatoria_id, 
@@ -85,15 +103,23 @@ const createSolicitud = async (req, res) => {
 const updateSolicitud = async (req, res) => {
   try {
     const { id } = req.params;
-    const { usuario_id, convocatoria_id, sede_id, num_solicitud, observaciones, estado, motivo_cambio, tipos_documentos } = req.body;
+    let { usuario_id, convocatoria_id, sede_id, num_solicitud, observaciones, estado, motivo_cambio, tipos_documentos } = req.body;
 
-    if (!usuario_id || !convocatoria_id || !sede_id || !num_solicitud || !estado) {
+    // Ajustamos la validación del num_solicitud
+    if (!usuario_id || !convocatoria_id || !sede_id || !estado) {
       return res.status(400).json({ status: "error", message: "Todos los campos principales son requeridos para actualizar" });
     }
 
     const solicitudPrevia = await Solicitud.getById(id);
     if (!solicitudPrevia) {
       return res.status(404).json({ status: "error", message: "Solicitud no encontrada para actualizar" });
+    }
+
+    // Si en la edición limpian el código, mantenemos el que ya tenía. Si mandan uno nuevo, se actualiza
+    if (!num_solicitud || num_solicitud.trim() === "") {
+      num_solicitud = solicitudPrevia.num_solicitud;
+    } else {
+      num_solicitud = num_solicitud.trim().toUpperCase();
     }
 
     // Actualizamos los datos generales de la solicitud

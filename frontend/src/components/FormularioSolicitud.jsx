@@ -5,7 +5,7 @@ const FormularioSolicitud = () => {
     usuario_id: '',
     convocatoria_id: '',
     sede_id: '',
-    num_solicitud: ''
+    num_solicitud: '' // Se envía vacío para que el backend lo genere solo
   });
   const [archivo, setArchivo] = useState(null);
 
@@ -71,10 +71,10 @@ const FormularioSolicitud = () => {
           <input
             type="text"
             name="num_solicitud"
-            placeholder="Ej: SOL-2026-002"
-            onChange={handleInputChange}
-            className="border-2 border-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:ring-0 focus:border-[#5B9BD5] transition-all bg-slate-50 hover:bg-white text-slate-700 font-medium"
-            required
+            value="SE GENERARÁ AUTOMÁTICAMENTE"
+            disabled
+            autoComplete="off"
+            className="border-2 border-slate-200 rounded-xl px-4 py-3 bg-slate-100 text-slate-400 font-semibold cursor-not-allowed select-none focus:outline-none"
           />
         </div>
       </div>
