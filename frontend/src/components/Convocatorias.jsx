@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function Convocatorias({ usuario }) {
   const [formData, setFormData] = useState({
-    codigoPropuesta: '',
+    codigoPropuesta: '', // Se llenará automáticamente al cargar
     sede: '',
     observaciones: ''
   });
@@ -13,6 +13,24 @@ function Convocatorias({ usuario }) {
     honestidad: null,
     id: null
   });
+
+  // Función helper para generar el código aleatorio e irrepetible de la propuesta
+  const generarCodigoPropuesta = () => {
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let aleatorio = '';
+    for (let i = 0; i < 5; i++) {
+      aleatorio += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    }
+    return `PROP-2026-${aleatorio}`;
+  };
+
+  // useEffect que se ejecuta una sola vez cuando el profesor entra al formulario
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      codigoPropuesta: generarCodigoPropuesta()
+    }));
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -27,9 +45,10 @@ function Convocatorias({ usuario }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Datos a enviar:", formData);
+    console.log("Datos a enviar al backend:", formData);
     console.log("Archivos a subir:", archivos);
-    alert("¡Solicitud procesada con éxito! (Simulación)");
+    alert(`¡Solicitud procesada con éxito! Radicado: ${formData.codigoPropuesta}`);
+    // Pronto pondremos Axios aquí para conectar con el createSolicitud del backend
   };
 
   return (
@@ -48,15 +67,15 @@ function Convocatorias({ usuario }) {
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
               Número de Solicitud / Código Propuesta
             </label>
-            <input 
-              type="text"
-              name="codigoPropuesta"
-              placeholder="Ej: PROP-2026-01"
-              value={formData.codigoPropuesta}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] transition-all text-sm"
-              required
-            />
+          <input 
+  type="text"
+  name="codigoPropuesta"
+  value={formData.codigoPropuesta}
+  readOnly
+  autoComplete="off"
+  className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none text-slate-700 font-semibold text-sm cursor-not-allowed select-none"
+  required
+/>
           </div>
 
           <div>

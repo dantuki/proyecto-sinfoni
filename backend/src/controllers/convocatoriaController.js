@@ -1,6 +1,6 @@
 const Convocatoria = require('../models/convocatoriaModel');
 
-// Función helper para generar códigos alfanuméricos aleatorios limpios
+// Generador de códigos de convocatoria automáticos si el admin no digita uno
 const generarCodigoRandom = (prefijo = 'CNV') => {
     const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let resultado = '';
@@ -34,22 +34,35 @@ const getConvocatoriaById = async (req, res) => {
 
 const createConvocatoria = async (req, res) => {
     try {
-        let { codigo, titulo, tipo, fecha_inicio, fecha_cierre, bases_url } = req.body;
+        let { codigo, titulo, descripcion, tipo, fecha_inicio, fecha_cierre, presupuesto_max, modalidad, bases_url } = req.body;
         
-        if (!titulo || !tipo || !fecha_inicio || !fecha_cierre) {
-            return res.status(400).json({ status: "error", message: "Los campos titulo, tipo, fecha_inicio y fecha_cierre son obligatorios" });
+        if (!titulo || !descripcion || !tipo || !fecha_inicio || !fecha_cierre) {
+            return res.status(400).json({ status: "error", message: "Los campos titulo, descripcion, tipo, fecha_inicio y fecha_cierre son obligatorios" });
         }
 
-        // Si el admin no envió un código manual, el backend genera uno automático
         if (!codigo || codigo.trim() === "") {
             codigo = generarCodigoRandom();
         } else {
-            // Limpiamos espacios y convertimos a mayúsculas para estandarizar
             codigo = codigo.trim().toUpperCase();
         }
 
-        const newId = await Convocatoria.create({ codigo, titulo, tipo, fecha_inicio, fecha_cierre, bases_url });
-        res.status(201).json({ status: "success", message: "Convocatoria creada exitosamente", data: { id: newId, codigo, titulo } });
+        const newId = await Convocatoria.create({ 
+            codigo, 
+            titulo, 
+            descripcion, 
+            tipo, 
+            fecha_inicio, 
+            fecha_cierre, 
+            presupuesto_max, 
+            modalidad, 
+            bases_url 
+        });
+
+        res.status(201).json({ 
+            status: "success", 
+            message: "Convocatoria creada exitosamente", 
+            data: { id: newId, codigo, titulo } 
+        });
     } catch (error) {
         res.status(500).json({ status: "error", message: "Error al crear la convocatoria", details: error.message });
     }
@@ -58,9 +71,9 @@ const createConvocatoria = async (req, res) => {
 const updateConvocatoria = async (req, res) => {
     try {
         const { id } = req.params;
-        let { codigo, titulo, tipo, fecha_inicio, fecha_cierre, bases_url } = req.body;
+        let { codigo, titulo, descripcion, tipo, fecha_inicio, fecha_cierre, presupuesto_max, modalidad, bases_url } = req.body;
 
-        if (!titulo || !tipo || !fecha_inicio || !fecha_cierre) {
+        if (!titulo || !descripcion || !tipo || !fecha_inicio || !fecha_cierre) {
             return res.status(400).json({ status: "error", message: "Todos los campos principales son requeridos para actualizar" });
         }
 
@@ -70,11 +83,22 @@ const updateConvocatoria = async (req, res) => {
             codigo = codigo.trim().toUpperCase();
         }
 
-        const affectedRows = await Convocatoria.update(id, { codigo, titulo, tipo, fecha_inicio, fecha_cierre, bases_url });
+        const affectedRows = await Convocatoria.update(id, { 
+            codigo, 
+            titulo, 
+            descripcion, 
+            tipo, 
+            fecha_inicio, 
+            fecha_cierre, 
+            presupuesto_max, 
+            modalidad, 
+            bases_url 
+        });
+
         if (affectedRows === 0) {
             return res.status(404).json({ status: "error", message: "Convocatoria no encontrada para actualizar" });
         }
-        res.status(200).json({ status: "success", message: "Convocatoria modificada/aplazada correctamente" });
+        res.status(200).json({ status: "success", message: "Convocatoria modificada correctamente" });
     } catch (error) {
         res.status(500).json({ status: "error", message: "Error al actualizar la convocatoria", details: error.message });
     }
