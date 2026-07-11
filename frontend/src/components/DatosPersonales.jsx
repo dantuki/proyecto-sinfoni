@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
 export default function DatosPersonales() {
-  // Modos y estados de la interfaz
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mensajeExito, setMensajeExito] = useState('');
 
-  // Estados del perfil de usuario
+  // Estados del usuario
   const [userId, setUserId] = useState(null);
   const [cedula, setCedula] = useState('');
   const [email, setEmail] = useState('');
@@ -16,7 +15,17 @@ export default function DatosPersonales() {
   const [direccion, setDireccion] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
 
-  // Cargar datos al montar el componente
+  // Estados académicos y nuevos campos
+  const [nivelEducativo, setNivelEducativo] = useState('');
+  const [carreraTitulo, setCarreraTitulo] = useState('');
+  const [certificadoUrl, setCertificadoUrl] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  
+  // Archivos binarios locales
+  const [archivoFoto, setArchivoFoto] = useState(null);
+  const [archivoCertificado, setArchivoCertificado] = useState(null);
+  const [vistaPreviaFoto, setVistaPreviaFoto] = useState('');
+
   useEffect(() => {
     const cargarDatosPerfil = async () => {
       try {
@@ -38,7 +47,6 @@ export default function DatosPersonales() {
         
         const resJson = await response.json();
 
-        // Solución al Problema 3: Desempaquetamos usando resJson.data
         if (response.ok && resJson && resJson.data) {
           const usuario = Array.isArray(resJson.data) ? resJson.data[0] : resJson.data;
           
@@ -49,6 +57,16 @@ export default function DatosPersonales() {
             setTelefono(usuario.telefono || '');
             setDireccion(usuario.direccion || '');
             setFotoUrl(usuario.foto_url || '');
+            setNivelEducativo(usuario.nivel_educativo || '');
+            setCarreraTitulo(usuario.carrera_titulo || '');
+            setCertificadoUrl(usuario.certificado_url || '');
+            
+            // Tratamiento de fechas para input tipo date (YYYY-MM-DD)
+            if (usuario.fecha_nacimiento) {
+              setFechaNacimiento(usuario.fecha_nacimiento.split('T')[0]);
+            } else {
+              setFechaNacimiento('');
+            }
           }
         }
       } catch (err) {
@@ -61,79 +79,78 @@ export default function DatosPersonales() {
     cargarDatosPerfil();
   }, []);
 
-  // Manejar cambio y subida de foto de perfil
-  const handleFotoChange = async (e) => {
+  const handleCambioFotoLocal = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const token = localStorage.getItem('token');
-    const formData = new FormData();
-    formData.append('foto', file);
-    formData.append('nombre_completo', nombreCompleto);
-    formData.append('cedula', cedula);
-    formData.append('email', email);
-    formData.append('telefono', telefono);
-    formData.append('direccion', direccion);
-
-    try {
-      setError('');
-      // Solución al Problema 2: Incluimos Authorization Bearer token
-      const response = await fetch(`http://localhost:5000/api/usuarios/${userId}`, {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'No se pudo subir la imagen.');
-        return;
-      }
-
-      setFotoUrl(data.foto_url);
-      setMensajeExito('¡Foto de perfil actualizada con éxito!');
-      setTimeout(() => setMensajeExito(''), 3000);
-    } catch (err) {
-      setError('Error de red al intentar subir la foto.');
-    }
+    setArchivoFoto(file);
+    setVistaPreviaFoto(URL.createObjectURL(file));
   };
 
-  // Guardar cambios del formulario de texto
   const handleGuardarCambios = async (e) => {
     e.preventDefault();
     setError('');
     setMensajeExito('');
     const token = localStorage.getItem('token');
 
+    const formData = new FormData();
+    formData.append('nombre_completo', nombreCompleto);
+    formData.append('cedula', cedula);
+    formData.append('email', email);
+    formData.append('telefono', telefono);
+    formData.append('direccion', direccion);
+    formData.append('nivel_educativo', nivelEducativo);
+    formData.append('carrera_titulo', carreraTitulo);
+    formData.append('fecha_nacimiento', fechaNacimiento);
+
+    if (archivoFoto) formData.append('foto', archivoFoto);
+    if (archivoCertificado) formData.append('certificado', archivoCertificado);
+
     try {
       const response = await fetch(`http://localhost:5000/api/usuarios/${userId}`, {
         method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          nombre_completo: nombreCompleto,
-          cedula,
-          email,
-          telefono,
-          direccion
-        })
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData 
       });
 
-      const data = await response.json();
+      const resJson = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Error al guardar los datos.');
+        setError(resJson.error || 'Error al guardar el perfil.');
         return;
       }
 
-      setMensajeExito('¡Datos personales guardados con éxito!');
+      if (resJson.data) {
+        setFotoUrl(resJson.data.foto_url || '');
+        setCertificadoUrl(resJson.data.certificado_url || '');
+        if (resJson.data.fecha_nacimiento) {
+          setFechaNacimiento(resJson.data.fecha_nacimiento.split('T')[0]);
+        }
+      }
+
+      setMensajeExito('¡Perfil SINFONI actualizado con éxito!');
       setIsEditing(false);
-      setTimeout(() => setMensajeExito(''), 3000);
+      setArchivoFoto(null);
+      setArchivoCertificado(null);
+      setVistaPreviaFoto('');
+      setTimeout(() => setMensajeExito(''), 4000);
     } catch (err) {
-      setError('No se pudo actualizar el perfil.');
+      setError('No se pudo establecer conexión con el backend.');
     }
+  };
+
+  // Función nativa para imprimir la pantalla de manera limpia
+  const ejecutarImpresion = () => {
+    window.print();
+  };
+
+  // Formateador de fecha visual simple (DD/MM/AAAA) para la vista estática
+  const formatearFechaVisual = (fechaStr) => {
+    if (!fechaStr) return 'No registrada';
+    const partes = fechaStr.split('-');
+    if (partes.length === 3) {
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+    return fechaStr;
   };
 
   if (loading) {
@@ -141,130 +158,236 @@ export default function DatosPersonales() {
   }
 
   return (
-    <div className="w-full max-w-4xl bg-white shadow-sm rounded-2xl border border-slate-100 p-8 mx-auto mt-6 space-y-6">
+    <div className="w-full max-w-4xl bg-white shadow-sm rounded-2xl border border-slate-100 p-8 mx-auto mt-6 space-y-6 print:border-0 print:shadow-none print:mt-0">
       
-      {error && <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center">⚠️ {error}</div>}
-      {mensajeExito && <div className="p-3 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-100 text-center">🎉 {mensajeExito}</div>}
+      {/* Mensajes de Alerta (Ocultos en impresión) */}
+      {error && <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center print:hidden">⚠️ {error}</div>}
+      {mensajeExito && <div className="p-3 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-100 text-center print:hidden">🎉 {mensajeExito}</div>}
+
+      {/* Botón Superior de Impresión (Estilo SINFONI - Oculto al imprimir) */}
+      <div className="flex justify-between items-center border-b pb-4 border-slate-100 print:hidden">
+        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Sistema de Información para la Investigación</h3>
+        <button
+          type="button"
+          onClick={ejecutarImpresion}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2"
+        >
+          🖨️ Imprimir Certificado
+        </button>
+      </div>
 
       <div className="flex flex-col md:flex-row gap-8">
         
-        {/* Zona Foto/Avatar e Identificación */}
+        {/* Zona Lateral Izquierda: Foto de Perfil */}
         <div className="flex flex-col items-center w-full md:w-1/3 space-y-4">
           <div className="relative group w-40 h-40">
-            {fotoUrl ? (
+            {vistaPreviaFoto ? (
+              <img 
+                src={vistaPreviaFoto} 
+                alt="Previsualización" 
+                className="w-full h-full object-cover rounded-xl border-4 border-amber-400 shadow-sm" 
+              />
+            ) : fotoUrl ? (
               <img 
                 src={`http://localhost:5000${fotoUrl}`} 
-                alt="Perfil Real" 
-                className="w-full h-full object-cover rounded-full border-4 border-slate-50 shadow-sm" 
+                alt="Perfil SINFONI" 
+                className="w-full h-full object-cover rounded-xl border-4 border-slate-100 shadow-sm"
+                onError={(e) => {
+                  // Fallback por si la ruta local falla temporalmente
+                  e.target.src = "https://via.placeholder.com/150";
+                }}
               />
             ) : (
-              <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-5xl shadow-inner uppercase">
+              <div className="w-full h-full rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white font-bold text-5xl shadow-inner uppercase">
                 {nombreCompleto ? nombreCompleto.charAt(0) : 'U'}
               </div>
             )}
             
-            <label className="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer text-center p-2">
-              <span className="text-xl">📷</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider mt-1">Cambiar Foto</span>
-              <input type="file" accept="image/*" onChange={handleFotoChange} className="hidden" />
-            </label>
+            {isEditing && (
+              <label className="absolute inset-0 bg-black/60 rounded-xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer text-center p-2">
+                <span className="text-xl">📷</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider mt-1">Subir Foto</span>
+                <input type="file" accept="image/*" onChange={handleCambioFotoLocal} className="hidden" />
+              </label>
+            )}
           </div>
 
-          <div className="text-center w-full bg-slate-50 p-3 rounded-xl border border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documento de Identidad</p>
-            {/* Solución al Problema 1: Campo de Cédula ahora es un input real al editar */}
+          <div className="text-center w-full bg-slate-50 p-3 rounded-xl border border-slate-100 print:bg-white">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documento Identidad</p>
             {isEditing ? (
               <input 
                 type="text" 
                 value={cedula} 
                 onChange={(e) => setCedula(e.target.value)} 
-                placeholder="Escribe tu cédula"
                 className="w-full mt-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-center focus:outline-none focus:border-blue-500 font-semibold"
               />
             ) : (
-              <p className="text-slate-700 font-bold text-lg">{cedula || 'Sin Cédula'}</p>
+              <p className="text-slate-700 font-bold text-base">{cedula || 'Sin número'}</p>
             )}
           </div>
         </div>
 
-        {/* Zona de Inputs del Formulario */}
-        <form onSubmit={handleGuardarCambios} className="w-full md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Zona Central: Datos y Formulario */}
+        <form onSubmit={handleGuardarCambios} className="w-full md:w-2/3 space-y-6">
           
-          <div className="col-span-2">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nombre Completo</label>
-            {isEditing ? (
-              <input 
-                type="text" 
-                value={nombreCompleto} 
-                onChange={(e) => setNombreCompleto(e.target.value)} 
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
-              />
-            ) : (
-              <p className="text-slate-800 text-xl font-bold tracking-tight uppercase bg-slate-50/40 px-3 py-2 rounded-lg border border-dashed border-slate-200">{nombreCompleto || 'REGISTRE SU NOMBRE'}</p>
-            )}
+          <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4 print:bg-white print:border-0">
+            <div className="col-span-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nombre del Investigador</label>
+              {isEditing ? (
+                <input 
+                  type="text" 
+                  value={nombreCompleto} 
+                  onChange={(e) => setNombreCompleto(e.target.value)} 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
+                />
+              ) : (
+                <p className="text-slate-800 text-base font-bold uppercase tracking-tight">{nombreCompleto || 'REGISTRE SU NOMBRE'}</p>
+              )}
+            </div>
+
+            {/* Campo: Fecha de Nacimiento (Fix Solicitado) */}
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Fecha Nacimiento</label>
+              {isEditing ? (
+                <input 
+                  type="date" 
+                  value={fechaNacimiento} 
+                  onChange={(e) => setFechaNacimiento(e.target.value)} 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500"
+                />
+              ) : (
+                <p className="text-slate-700 text-xs font-bold bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0">
+                  {formatearFechaVisual(fechaNacimiento)}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Correo Electrónico</label>
+              {isEditing ? (
+                <input 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
+                />
+              ) : (
+                <p className="text-slate-600 text-xs font-medium bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0">{email}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Teléfono</label>
+              {isEditing ? (
+                <input 
+                  type="text" 
+                  value={telefono} 
+                  onChange={(e) => setTelefono(e.target.value)} 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
+                />
+              ) : (
+                <p className="text-slate-700 text-xs font-semibold bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0">{telefono || 'No registrado'}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Dirección Residencia</label>
+              {isEditing ? (
+                <input 
+                  type="text" 
+                  value={direccion} 
+                  onChange={(e) => set開ireccion(e.target.value)} 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
+                />
+              ) : (
+                <p className="text-slate-700 text-xs font-semibold bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0">{direccion || 'No registrada'}</p>
+              )}
+            </div>
           </div>
 
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Correo Electrónico</label>
-            {/* Solución al Problema 1: Campo de Correo ahora es un input real al editar */}
-            {isEditing ? (
-              <input 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
-              />
-            ) : (
-              <p className="text-slate-600 text-sm font-medium bg-slate-50 px-3 py-2.5 rounded-lg border border-slate-100">{email || 'Sin correo registrado'}</p>
-            )}
-          </div>
+          {/* Bloque Académico */}
+          <div className="bg-slate-50/50 p-4 rounded-xl border border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-4 print:bg-white print:border-0">
+            <div className="col-span-2">
+              <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider print:text-slate-700">🎓 Formación Profesional</h4>
+            </div>
 
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Teléfono de Contacto</label>
-            {isEditing ? (
-              <input 
-                type="text" 
-                value={telefono} 
-                onChange={(e) => setTelefono(e.target.value)} 
-                placeholder="Ej. 3123456789"
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
-              />
-            ) : (
-              <p className="text-slate-700 text-sm font-semibold bg-slate-50/40 px-3 py-2.5 rounded-lg border border-dashed border-slate-200">{telefono || 'No asignado (Clic en Editar)'}</p>
-            )}
-          </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Nivel Alcanzado</label>
+              {isEditing ? (
+                <select
+                  value={nivelEducativo}
+                  onChange={(e) => setNivelEducativo(e.target.value)}
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm bg-white"
+                >
+                  <option value="">Seleccione nivel...</option>
+                  <option value="Pregrado / Tecnólogo">Pregrado / Tecnólogo</option>
+                  <option value="Especialización">Especialización</option>
+                  <option value="Maestría">Maestría</option>
+                  <option value="Doctorado">Doctorado</option>
+                </select>
+              ) : (
+                <p className="text-slate-700 text-xs font-bold bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0 uppercase">{nivelEducativo || 'No especificado'}</p>
+              )}
+            </div>
 
-          <div className="col-span-2">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Dirección de Residencia</label>
-            {isEditing ? (
-              <input 
-                type="text" 
-                value={direccion} 
-                onChange={(e) => setDireccion(e.target.value)} 
-                placeholder="Calle, Carrera, Barrio..."
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-all"
-              />
-            ) : (
-              <div className="flex items-center gap-3 bg-slate-50/40 px-3 py-2.5 rounded-lg border border-dashed border-slate-200">
-                <span className="text-base">📍</span>
-                <p className="text-slate-700 text-sm font-semibold">{direccion || 'No asignada aún'}</p>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Programa / Título</label>
+              {isEditing ? (
+                <input 
+                  type="text" 
+                  value={carreraTitulo} 
+                  onChange={(e) => setCarreraTitulo(e.target.value)} 
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
+                />
+              ) : (
+                <p className="text-slate-700 text-xs font-semibold bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0 italic">{carreraTitulo || 'No registrado'}</p>
+              )}
+            </div>
+
+            <div className="col-span-2 border-t pt-3 mt-1 border-slate-200/60 print:hidden">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Certificado Vigente (PDF)</label>
+              <div className="flex flex-wrap items-center gap-4 mt-1">
+                {certificadoUrl && (
+                  <a 
+                    href={`http://localhost:5000${certificadoUrl}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-200 transition-colors inline-flex items-center gap-1.5"
+                  >
+                    📄 Ver Soporte PDF
+                  </a>
+                )}
+                {isEditing && (
+                  <input 
+                    type="file" 
+                    accept=".pdf"
+                    className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-slate-900 file:text-white"
+                    onChange={(e) => setArchivoCertificado(e.target.files[0])}
+                  />
+                )}
               </div>
-            )}
+            </div>
           </div>
 
-          <div className="col-span-2 flex justify-end gap-3 pt-2">
+          {/* Panel de Botones inferiores (Ocultos por completo al Imprimir) */}
+          <div className="flex justify-end gap-3 pt-2 print:hidden">
             {isEditing ? (
               <>
                 <button 
                   type="button" 
-                  onClick={() => setIsEditing(false)}
-                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl transition-colors"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setArchivoFoto(null);
+                    setArchivoCertificado(null);
+                    setVistaPreviaFoto('');
+                  }}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-xs rounded-xl"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl transition-colors shadow-sm"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-xl shadow-sm"
                 >
                   Guardar Cambios
                 </button>
@@ -273,9 +396,9 @@ export default function DatosPersonales() {
               <button 
                 type="button" 
                 onClick={() => setIsEditing(true)}
-                className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-colors shadow-sm"
+                className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-sm"
               >
-                Editar Perfil
+                Modificar Datos SINFONI
               </button>
             )}
           </div>
@@ -284,5 +407,5 @@ export default function DatosPersonales() {
       </div>
 
     </div>
-  );
+  );  
 }

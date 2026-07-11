@@ -19,7 +19,7 @@ const InicioCards = ({ cambiarVista, usuario }) => {
       color: 'from-blue-500 to-blue-600',
       opciones: [
         { nombre: 'Datos Personales', vista: 'datos_personales' },
-        { nombre: esAdmin ? 'Administrar Noticias' : 'Noticias', vista: 'noticias' }
+        { nombre: esAdmin ? 'mis noticias' : 'Noticias', vista: 'noticias' }
       ]
     },
     {

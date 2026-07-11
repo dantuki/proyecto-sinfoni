@@ -12,7 +12,7 @@ export default function Participaciones({ usuario }) {
     rol_proyecto: 'Investigador Principal',
     horas_dedicacion: '',
     fecha_vinculacion: '',
-    estado_vinculacion: 'Activo'
+    estado_vinculacion: 'Pendiente' // Por defecto inicia en Pendiente de revisión
   });
 
   const token = localStorage.getItem('token');
@@ -30,13 +30,12 @@ export default function Participaciones({ usuario }) {
       if (res.ok && data.success) {
         setParticipaciones(data.data || []);
       } else {
-        // Muestra un estado limpio si aún no hay registros o falla la respuesta
         setParticipaciones([]);
         if (!res.ok) setError(data.error || 'No se pudieron consultar las participaciones.');
       }
     } catch (err) {
       console.error('Error al conectar con backend:', err);
-      setError('Verifica que el servidor Backend (Node.js) esté ejecutándose en http://localhost:5000');
+      setError('Verifica que el servidor Backend (Node.js) esté ejecutándose.');
     } finally {
       setLoading(false);
     }
@@ -45,6 +44,29 @@ export default function Participaciones({ usuario }) {
   useEffect(() => {
     cargarParticipaciones();
   }, []);
+
+  // Función exclusiva del Admin para cambiar el estado de la postulación
+  const handleCambiarEstado = async (id, nuevoEstado) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/participaciones/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ estado_vinculacion: nuevoEstado })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Solicitud actualizada a: ${nuevoEstado}`);
+        cargarParticipaciones(); // Recarga la lista para ver los cambios
+      } else {
+        alert(data.error || 'Error al actualizar el estado de la vinculación.');
+      }
+    } catch (err) {
+      alert('Error de red al intentar conectar con el servidor.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,7 +83,7 @@ export default function Participaciones({ usuario }) {
       if (res.ok && data.success) {
         alert(data.message);
         setModalAbierto(false);
-        setFormData({ proyecto_id: '', usuario_id: '', rol_proyecto: 'Investigador Principal', horas_dedicacion: '', fecha_vinculacion: '', estado_vinculacion: 'Activo' });
+        setFormData({ proyecto_id: '', usuario_id: '', rol_proyecto: 'Investigador Principal', horas_dedicacion: '', fecha_vinculacion: '', estado_vinculacion: 'Pendiente' });
         cargarParticipaciones();
       } else {
         alert(data.error || 'Error al procesar la vinculación.');
@@ -71,23 +93,38 @@ export default function Participaciones({ usuario }) {
     }
   };
 
+  // Retorna los colores de la etiqueta según el estado dinámico
+  const obtenerEstiloEstado = (estado) => {
+    switch (estado) {
+      case 'Activo':
+      case 'Aprobado':
+        return 'bg-green-100 text-green-800 border border-green-200';
+      case 'Rechazado':
+      case 'Inactivo':
+        return 'bg-red-100 text-red-800 border border-red-200';
+      case 'Pendiente':
+      default:
+        return 'bg-amber-100 text-amber-800 border border-amber-200';
+    }
+  };
+
   if (loading) return <div className="p-6 text-center text-white font-medium">Cargando registros de SINFONI...</div>;
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-lg w-full max-w-5xl">
       <div className="flex justify-between items-center mb-6 border-b pb-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Módulo de Participaciones e Investigadores</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Módulo de Participaciones y Solicitudes</h2>
           <p className="text-sm text-gray-500">
-            {esAdmin ? 'Vista de control global de investigadores asignados.' : `Proyectos asignados al docente: ${nombreUsuario}`}
+            {esAdmin ? 'Panel global de administración y aprobación de propuestas.' : `Historial de propuestas de: ${nombreUsuario}`}
           </p>
         </div>
         {esAdmin && (
           <button
             onClick={() => setModalAbierto(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow text-xs uppercase tracking-wider"
           >
-            + Vincular Investigador
+            + Vincular Manualmente
           </button>
         )}
       </div>
@@ -95,35 +132,76 @@ export default function Participaciones({ usuario }) {
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}
 
       {participaciones.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">No se encontraron vinculaciones registradas en el sistema.</div>
+        <div className="text-center py-8 text-gray-500">No se encontraron vinculaciones ni postulaciones registradas.</div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 bg-white text-sm">
-            <thead className="bg-gray-50 text-left font-semibold text-gray-700 uppercase tracking-wider">
+            <thead className="bg-gray-50 text-left font-semibold text-gray-700 uppercase tracking-wider text-xs">
               <tr>
                 <th className="px-4 py-3">Código</th>
-                <th className="px-4 py-3">Proyecto</th>
-                {esAdmin && <th className="px-4 py-3">Docente</th>}
-                <th className="px-4 py-3">Rol Investigativo</th>
-                <th className="px-4 py-3">Horas Dedicación</th>
-                <th className="px-4 py-3">Fecha Vinculación</th>
+                <th className="px-4 py-3">Proyecto / Propuesta</th>
+                {esAdmin && <th className="px-4 py-3">Docente Postulado</th>}
+                <th className="px-4 py-3">Rol</th>
+                <th className="px-4 py-3">Dedicación</th>
+                <th className="px-4 py-3">Fecha</th>
                 <th className="px-4 py-3">Estado</th>
+                {esAdmin && <th className="px-4 py-3 text-center">Acciones de Control</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-gray-700">
               {participaciones.map((part) => (
                 <tr key={part.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs font-bold text-blue-600">{part.codigo_proyecto}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-blue-600">{part.codigo_proyecto || 'N/A'}</td>
                   <td className="px-4 py-3 max-w-xs truncate font-medium">{part.titulo_proyecto}</td>
-                  {esAdmin && <td className="px-4 py-3 font-medium">{part.nombre_usuario}</td>}
-                  <td className="px-4 py-3">{part.rol_proyecto}</td>
+                  {esAdmin && <td className="px-4 py-3 font-medium text-slate-600">{part.nombre_usuario}</td>}
+                  <td className="px-4 py-3 text-xs">{part.rol_proyecto}</td>
                   <td className="px-4 py-3 text-center font-semibold">{part.horas_dedicacion} hrs</td>
-                  <td className="px-4 py-3">{new Date(part.fecha_vinculacion).toLocaleDateString('es-CO')}</td>
+                  <td className="px-4 py-3 text-xs">{new Date(part.fecha_vinculacion).toLocaleDateString('es-CO')}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${part.estado_vinculacion === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${obtenerStyleEstado(part.estado_vinculacion)}`}>
                       {part.estado_vinculacion}
                     </span>
                   </td>
+                  {esAdmin && (
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <div className="flex justify-center gap-2">
+                        {/* Botón para revisar los soportes en PDF subidos */}
+                        <button
+                          onClick={() => {
+                            if (part.soporte_url || part.url_bases) {
+                              window.open(part.soporte_url || part.url_bases, '_blank');
+                            } else {
+                              alert('El docente no cargó ningún documento PDF de soporte para esta postulación.');
+                            }
+                          }}
+                          className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold border transition"
+                          title="Ver archivos cargados por el profesor"
+                        >
+                          📄 Ver PDF
+                        </button>
+                        
+                        {/* Controles de Estado de Aprobación */}
+                        {part.estado_vinculacion === 'Pendiente' ? (
+                          <>
+                            <button
+                              onClick={() => handleCambiarEstado(part.id, 'Aprobado')}
+                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition"
+                            >
+                              Aprobar ✔
+                            </button>
+                            <button
+                              onClick={() => handleCambiarEstado(part.id, 'Rechazado')}
+                              className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold transition"
+                            >
+                              Rechazar ✖
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic">Evaluado</span>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -131,12 +209,12 @@ export default function Participaciones({ usuario }) {
         </div>
       )}
 
-      {/* MODAL DE VINCULACIÓN */}
+      {/* MODAL DE VINCULACIÓN MANUAL */}
       {modalAbierto && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Nueva Vinculación de Investigador</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 text-left">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Proyecto</label>
                 <input

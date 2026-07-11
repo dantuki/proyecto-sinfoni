@@ -38,41 +38,46 @@ const updateUsuario = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Buscamos el usuario actual en la BD
     const usuarioActual = await Usuario.getById(id);
-    
-    // Validamos si viene dentro de un array o directo como objeto
     const userObj = Array.isArray(usuarioActual) ? usuarioActual[0] : usuarioActual;
 
-    // 2. Clonamos lo que viene en el cuerpo del formulario
     const updateData = { ...req.body };
 
-    // 3. Si el usuario subió un archivo de imagen nuevo
-    if (req.file) {
-      // Si el registro ya tenía una foto vieja guardada, la borramos físicamente del servidor
-      if (userObj && userObj.foto_url) {
-        const rutaFotoVieja = path.join(__dirname, '../../', userObj.foto_url);
-        if (fs.existsSync(rutaFotoVieja)) {
-          fs.unlinkSync(rutaFotoVieja);
+    if (req.files) {
+      if (req.files['foto'] && req.files['foto'][0]) {
+        if (userObj && userObj.foto_url) {
+          const rutaFotoVieja = path.join(__dirname, '../../', userObj.foto_url);
+          if (fs.existsSync(rutaFotoVieja)) {
+            fs.unlinkSync(rutaFotoVieja);
+          }
         }
+        updateData.foto_url = `/uploads/${req.files['foto'][0].filename}`;
       }
-      // Inyectamos la nueva ruta de la foto en el objeto de actualización
-      updateData.foto_url = `/uploads/${req.file.filename}`;
+
+      if (req.files['certificado'] && req.files['certificado'][0]) {
+        if (userObj && userObj.certificado_url) {
+          const rutaCertificadoViejo = path.join(__dirname, '../../', userObj.certificado_url);
+          if (fs.existsSync(rutaCertificadoViejo)) {
+            fs.unlinkSync(rutaCertificadoViejo);
+          }
+        }
+        updateData.certificado_url = `/uploads/${req.files['certificado'][0].filename}`;
+      }
     }
 
-    // 4. LÓGICA DE PERSISTENCIA SEGURA (UPSERT MANUAL)
-    // Si el usuario logueado no existe en la tabla de perfiles (ej: Profesores o Admins nuevos), lo creamos.
-    // Si ya existe, simplemente actualizamos sus datos.
     if (!userObj) {
       await Usuario.create({ id, ...updateData });
     } else {
       await Usuario.update(id, updateData);
     }
 
+    // Buscamos el registro real final para asegurar consistencia absoluta de URLs
+    const usuarioFinal = await Usuario.getById(id);
+
     res.json({ 
       status: "success", 
       message: "Usuario actualizado correctamente",
-      foto_url: updateData.foto_url || (userObj ? userObj.foto_url : null)
+      data: usuarioFinal
     });
   } catch (e) { 
     res.status(500).json({ error: e.message }); 
@@ -93,4 +98,11 @@ const limpiarTablaDesarrollo = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
-module.exports = { getUsuarios, getUsuarioById, registrarUsuario, updateUsuario, deleteUsuario, limpiarTablaDesarrollo };
+module.exports = { 
+  getUsuarios, 
+  getUsuarioById, 
+  registrarUsuario, 
+  updateUsuario, 
+  deleteUsuario, 
+  limpiarTablaDesarrollo 
+};
