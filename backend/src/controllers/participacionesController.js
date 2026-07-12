@@ -1,6 +1,6 @@
 const db = require('../config/db');
 
-// 1. Obtener listado de participaciones o postulaciones
+// 1. Obtener listado de participaciones (Filtrado por usuario si es Docente)
 exports.getParticipaciones = async (req, res) => {
   try {
     const usuarioLogueado = req.usuario || req.user; 
@@ -11,7 +11,6 @@ exports.getParticipaciones = async (req, res) => {
     const usuarioId = usuarioLogueado.id || usuarioLogueado.usuarioId || usuarioLogueado.id_usuario;
     const rol = usuarioLogueado.rol;
 
-    // Proyectamos part.archivo_url como 'soporte_url' para acoplarnos al mapeo nativo del Frontend
     let query = `
       SELECT part.*, 
              part.archivo_url AS soporte_url,
@@ -38,7 +37,7 @@ exports.getParticipaciones = async (req, res) => {
   }
 };
 
-// 2. Procesar postulaciones del Docente o registros manuales del Admin
+// 2. Crear vinculación directa (Admin) o enviar postulación con PDF (Docente)
 exports.crearVinculacion = async (req, res) => {
   try {
     const usuarioLogueado = req.usuario || req.user;
@@ -51,17 +50,14 @@ exports.crearVinculacion = async (req, res) => {
 
     const { proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion } = req.body;
 
-    // Validar campos obligatorios de negocio
     if (!proyecto_id || !rol_proyecto || !horas_dedicacion || !fecha_vinculacion) {
       return res.status(400).json({ error: 'Faltan parámetros críticos para procesar el registro.' });
     }
 
-    // Si es Admin, toma el usuario asignado del input. Si es Docente, se autoasignará su propio ID del token
     const esAdmin = rol === 'Admin' || rol === 'Administrador';
     const finalUsuarioId = esAdmin ? usuario_id : currentUserId;
     const finalEstado = esAdmin ? 'Activo' : 'Pendiente';
 
-    // Construir la URL pública de acceso para el PDF si fue cargado
     const archivo_url = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
 
     const query = `
@@ -91,7 +87,7 @@ exports.crearVinculacion = async (req, res) => {
   }
 };
 
-// 3. Modificar el estado de una vinculación (Aprobado/Rechazado)
+// 3. Modificar el estado de una vinculación (Soporta 'Aprobado', 'Rechazado', 'Activo', 'Inactivo')
 exports.actualizarEstado = async (req, res) => {
   try {
     const { id } = req.params;
@@ -104,9 +100,29 @@ exports.actualizarEstado = async (req, res) => {
     const query = `UPDATE participaciones SET estado_vinculacion = ? WHERE id = ?`;
     await db.query(query, [estado_vinculacion, id]);
 
-    res.json({ success: true, message: 'El estado de la propuesta se actualizó exitosamente.' });
+    res.json({ success: true, message: `El estado se actualizó a de forma exitosa.` });
   } catch (err) {
     console.error('❌ Error en actualizarEstado:', err);
     res.status(500).json({ error: 'Error al cambiar el estado del registro en el servidor.' });
+  }
+};
+
+// 4. Eliminar una vinculación o postulación de manera permanente
+exports.eliminarParticipacion = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [existe] = await db.query('SELECT * FROM participaciones WHERE id = ?', [id]);
+    if (existe.length === 0) {
+      return res.status(404).json({ error: 'La vinculación especificada no existe o ya fue eliminada.' });
+    }
+
+    const query = `DELETE FROM participaciones WHERE id = ?`;
+    await db.query(query, [id]);
+
+    res.json({ success: true, message: 'La vinculación fue removida del sistema correctamente.' });
+  } catch (err) {
+    console.error('❌ Error en eliminarParticipacion:', err);
+    res.status(500).json({ error: 'Error interno al intentar eliminar el registro.' });
   }
 };
