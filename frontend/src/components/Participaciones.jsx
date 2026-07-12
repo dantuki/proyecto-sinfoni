@@ -19,7 +19,6 @@ export default function Participaciones({ usuario }) {
   const esAdmin = usuario?.rol === 'Admin' || usuario?.rol === 'Administrador';
   const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
   
-  // Obtenemos el ID del usuario actual de forma segura
   const currentUserId = usuario?.id || usuario?.id_usuario || localStorage.getItem('userId');
 
   const cargarParticipaciones = async () => {
@@ -27,21 +26,32 @@ export default function Participaciones({ usuario }) {
       setLoading(true);
       setError(null);
 
-      // Si es Admin ve todo; si es Profesor, ve solo lo suyo apuntando a su ID
-      const url = esAdmin 
-        ? 'http://localhost:5000/api/participaciones' 
-        : `http://localhost:5000/api/participaciones/usuario/${currentUserId}`;
+      // 🟢 CORREGIDO: Ambos roles consultan a la misma ruta. El Backend filtra usando el Token.
+      const url = 'http://localhost:5000/api/participaciones';
 
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      // Control por si el backend responde con un error o página HTML no esperada
+      if (!res.ok) {
+        const txtError = await res.text();
+        try {
+          const jsonError = JSON.parse(txtError);
+          setError(jsonError.error || 'No se pudieron consultar las participaciones.');
+        } catch {
+          setError(`Error ${res.status}: El servidor no devolvió una respuesta JSON válida.`);
+        }
+        setParticipaciones([]);
+        return;
+      }
+      
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data.success) {
         setParticipaciones(data.data || []);
       } else {
         setParticipaciones([]);
-        if (!res.ok) setError(data.error || 'No se pudieron consultar las participaciones.');
+        setError(data.error || 'No se pudieron consultar las participaciones.');
       }
     } catch (err) {
       console.error('Error al conectar con backend:', err);
@@ -189,7 +199,8 @@ export default function Participaciones({ usuario }) {
                     {part.fecha_vinculacion ? new Date(part.fecha_vinculacion).toLocaleDateString('es-CO') : 'N/A'}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${obtenerStyleEstado(part.estado_vinculacion)}`}>
+                    {/* 🟢 CORREGIDO: Se cambió 'obtenerStyleEstado' por 'obtenerEstiloEstado' */}
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${obtenerEstiloEstado(part.estado_vinculacion)}`}>
                       {part.estado_vinculacion}
                     </span>
                   </td>

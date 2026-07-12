@@ -6,13 +6,13 @@ const db = require('./config/db');
 // IMPORTACIÓN DE RUTAS (Módulos del Sistema SINFONI)
 const sedeRoutes = require('./routes/sedeRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
-const convocatoriaRoutes = require('./routes/convocatoriaRoutes');
+const convocatoriaRoutes = require('./routes/convocatoriaRoutes'); // 🛠️ Corregido aquí
 const solicitudRoutes = require('./routes/solicitudRoutes');
 const asignacionRoutes = require('./routes/asignacionRoutes');
-const authRoutes = require('./routes/authRoutes'); // Módulo de Autenticación
-const noticiaRoutes = require('./routes/noticiaRoutes'); // Módulo de Recursos Humanos / Noticias
+const authRoutes = require('./routes/authRoutes'); 
+const noticiaRoutes = require('./routes/noticiaRoutes'); 
 const proyectoRoutes = require('./routes/proyecto.routes');
-const participacionesRoutes = require('./routes/participaciones.routes'); // 👈 NUEVO: Importamos tus rutas de participaciones
+const participacionesRoutes = require('./routes/participaciones.routes'); 
 
 dotenv.config();
 const app = express();
@@ -33,10 +33,10 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/convocatorias', convocatoriaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
 app.use('/api/asignaciones', asignacionRoutes);
-app.use('/api/auth', authRoutes); // Montaje del endpoint de Login
-app.use('/api/noticias', noticiaRoutes); // Montaje de la API de noticias personales
+app.use('/api/auth', authRoutes); 
+app.use('/api/noticias', noticiaRoutes); 
 app.use('/api/proyectos', proyectoRoutes);
-app.use('/api/participaciones', participacionesRoutes); // 👈 NUEVO: Montamos el endpoint para el frontend
+app.use('/api/participaciones', participacionesRoutes); 
 
 // RUTA DE CONFIGURACIÓN / PRUEBA DE DISPONIBILIDAD
 app.get('/', (req, res) => {
