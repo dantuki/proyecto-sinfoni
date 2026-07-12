@@ -52,7 +52,7 @@ export default function Participaciones({ usuario }) {
       }
     } catch (err) {
       console.error('Error al conectar con backend:', err);
-      setError('Verifica que el servidor Backend (Node.js) esté ejecutándose.');
+      setError('Verifica que el servidor Backend esté ejecutándose.');
     } finally {
       setLoading(false);
     }
@@ -86,10 +86,30 @@ export default function Participaciones({ usuario }) {
     }
   };
 
+  const handleEliminar = async (id) => {
+    if (!window.confirm('¿Estás completamente seguro de que deseas eliminar permanentemente esta vinculación del sistema?')) {
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/participaciones/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(data.message || 'Registro eliminado con éxito.');
+        cargarParticipaciones();
+      } else {
+        alert(data.error || 'No se pudo eliminar el registro seleccionado.');
+      }
+    } catch (err) {
+      alert('Error de red al procesar la eliminación en el servidor.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Usamos FormData para empaquetar el flujo de datos mixtos (Texto + PDF)
       const dataToSend = new FormData();
       dataToSend.append('proyecto_id', formData.proyecto_id);
       dataToSend.append('rol_proyecto', formData.rol_proyecto);
@@ -107,7 +127,6 @@ export default function Participaciones({ usuario }) {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
-          // IMPORTANTE: Dejar vacío el Content-Type para que el navegador configure el boundary multipart automáticamente
         },
         body: dataToSend
       });
@@ -227,7 +246,7 @@ export default function Participaciones({ usuario }) {
                         className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold border transition"
                         title="Ver soporte digital cargado"
                       >
-                        📄 Ver PDF
+                        📄 PDF
                       </button>
                       
                       {esAdmin && (
@@ -238,18 +257,26 @@ export default function Participaciones({ usuario }) {
                                 onClick={() => handleCambiarEstado(part.id, 'Aprobado')}
                                 className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition"
                               >
-                                Aprobar ✔
+                                ✔ Aprobar
                               </button>
                               <button
                                 onClick={() => handleCambiarEstado(part.id, 'Rechazado')}
-                                className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold transition"
+                                className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-bold transition"
                               >
-                                Rechazar ✖
+                                ✖ Rechazar
                               </button>
                             </>
                           ) : (
                             <span className="text-[11px] text-slate-400 italic">Evaluado</span>
                           )}
+
+                          <button
+                            onClick={() => handleEliminar(part.id)}
+                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-bold transition"
+                            title="Eliminar permanentemente de la BD"
+                          >
+                            🗑️ Borrar
+                          </button>
                         </>
                       )}
                     </div>
@@ -261,7 +288,7 @@ export default function Participaciones({ usuario }) {
         </div>
       )}
 
-      {/* MODAL CON REFACTORIZACIÓN COMPORTAMENTAL */}
+      {/* MODAL FORMULARIO MULTIPART */}
       {modalAbierto && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
