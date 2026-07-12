@@ -2,22 +2,41 @@ CREATE DATABASE IF NOT EXISTS sinfoni_db;
 USE sinfoni_db;
 
 -- ========================================================
--- CREACIÓN DE ESTRUCTURAS PROTEGIDAS (IF NOT EXISTS)
+-- LIMPIEZA DE TABLAS EXISTENTES
+-- ========================================================
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS documentos_solicitud;
+DROP TABLE IF EXISTS participaciones;
+DROP TABLE IF EXISTS documentos_proyecto;
+DROP TABLE IF EXISTS proyectos_participantes;
+DROP TABLE IF EXISTS proyectos;
+DROP TABLE IF EXISTS noticias;
+DROP TABLE IF EXISTS login;
+DROP TABLE IF EXISTS trazabilidad_solicitudes;
+DROP TABLE IF EXISTS asignacion_evaluaciones;
+DROP TABLE IF EXISTS solicitudes;
+DROP TABLE IF EXISTS convocatorias;
+DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS sedes;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ========================================================
+-- CREACIÓN DE ESTRUCTURAS LIMPIAS
 -- ========================================================
 
--- 1. TABLA: SEDES (Independiente)
-CREATE TABLE IF NOT EXISTS sedes (
+-- 1. TABLA: SEDES
+CREATE TABLE sedes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre_sede VARCHAR(100) UNIQUE NOT NULL
 );
 
--- 2. TABLA: USUARIOS (Manejo de registro y login)
-CREATE TABLE IF NOT EXISTS usuarios (
+-- 2. TABLA: USUARIOS
+CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cedula VARCHAR(20) UNIQUE NOT NULL,
     nombre_completo VARCHAR(150) NOT NULL,    
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, -- Almacenará hashes de Bcrypt
+    password VARCHAR(255) NOT NULL, -- Hashes de Bcrypt
     rol ENUM('Admin', 'Profesor', 'Evaluador') DEFAULT 'Profesor',
     telefono VARCHAR(20) NULL,       
     direccion VARCHAR(255) NULL,    
@@ -25,19 +44,23 @@ CREATE TABLE IF NOT EXISTS usuarios (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. TABLA: CONVOCATORIAS (Independiente)
-CREATE TABLE IF NOT EXISTS convocatorias (
+-- 3. TABLA: CONVOCATORIAS (Estructura definitiva sincronizada con Frontend y Backend)
+CREATE TABLE convocatorias (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(50) UNIQUE NOT NULL,
     titulo VARCHAR(255) UNIQUE NOT NULL,
+    descripcion TEXT NOT NULL, -- Agregada para las tarjetas informativas
     tipo ENUM('General', 'Mediana') NOT NULL,
     fecha_inicio DATETIME NOT NULL,
     fecha_cierre DATETIME NOT NULL,
+    presupuesto_max VARCHAR(100) NULL, -- Agregada para mostrar topes de dinero
+    modalidad VARCHAR(100) NULL, -- Agregada para el tipo de financiación
     bases_url VARCHAR(500) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 4. TABLA: SOLICITUDES
-CREATE TABLE IF NOT EXISTS solicitudes (
+CREATE TABLE solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
     convocatoria_id INT NOT NULL,
@@ -55,7 +78,7 @@ CREATE TABLE IF NOT EXISTS solicitudes (
 );
 
 -- 5. TABLA: ASIGNACION_EVALUACIONES
-CREATE TABLE IF NOT EXISTS asignacion_evaluaciones (
+CREATE TABLE asignacion_evaluaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
     evaluador_id INT NOT NULL,
@@ -68,7 +91,7 @@ CREATE TABLE IF NOT EXISTS asignacion_evaluaciones (
 );
 
 -- 6. TABLA: TRAZABILIDAD_SOLICITUDES (Auditoría)
-CREATE TABLE IF NOT EXISTS trazabilidad_solicitudes (
+CREATE TABLE trazabilidad_solicitudes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
     usuario_id INT NOT NULL,
@@ -80,8 +103,8 @@ CREATE TABLE IF NOT EXISTS trazabilidad_solicitudes (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE RESTRICT
 );
 
--- 7. TABLA: LOGIN (Validación estricta de credenciales)
-CREATE TABLE IF NOT EXISTS login (
+-- 7. TABLA: LOGIN
+CREATE TABLE login (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -90,8 +113,8 @@ CREATE TABLE IF NOT EXISTS login (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
--- 8. TABLA: NOTICIAS (Historial Documental y logros de profesores)
-CREATE TABLE IF NOT EXISTS noticias (
+-- 8. TABLA: NOTICIAS
+CREATE TABLE noticias (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
     titulo VARCHAR(255) NOT NULL,
@@ -101,12 +124,12 @@ CREATE TABLE IF NOT EXISTS noticias (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 9. TABLA: PROYECTOS (Para la pestaña "Mis Proyectos")
-CREATE TABLE IF NOT EXISTS proyectos (
+-- 9. TABLA: PROYECTOS
+CREATE TABLE proyectos (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    codigo VARCHAR(50) UNIQUE NOT NULL, -- Ej: 'INV2494'
+    codigo VARCHAR(50) UNIQUE NOT NULL,
     titulo VARCHAR(255) NOT NULL,
-    director_id INT NOT NULL, -- Investigador Principal
+    director_id INT NOT NULL,
     fecha_inicio DATE NULL,
     fecha_fin DATE NULL,
     estado ENUM('Activo', 'Liquidado', 'En Evaluacion', 'Suspendido') DEFAULT 'Activo',
@@ -114,8 +137,8 @@ CREATE TABLE IF NOT EXISTS proyectos (
     FOREIGN KEY (director_id) REFERENCES usuarios(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 10. TABLA: PROYECTOS_PARTICIPANTES (Para la pestaña "Mis Participaciones")
-CREATE TABLE IF NOT EXISTS proyectos_participantes (
+-- 10. TABLA: PROYECTOS_PARTICIPANTES
+CREATE TABLE proyectos_participantes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     proyecto_id INT NOT NULL,
     usuario_id INT NOT NULL,
@@ -124,17 +147,18 @@ CREATE TABLE IF NOT EXISTS proyectos_participantes (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 11 tabla de documentacion de proyectos 
-CREATE TABLE IF NOT EXISTS documentos_proyecto (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  proyecto_id INT NOT NULL,
-  nombre_archivo VARCHAR(255) NOT NULL,
-  tipo_documento VARCHAR(100) NOT NULL,
-  fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
+-- 11. TABLA: DOCUMENTOS_PROYECTO
+CREATE TABLE documentos_proyecto (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    proyecto_id INT NOT NULL,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    tipo_documento VARCHAR(100) NOT NULL,
+    fecha_subida DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
 );
--- 12 tabla de participaciones 
-CREATE TABLE IF NOT EXISTS participaciones (
+
+-- 12. TABLA: PARTICIPACIONES
+CREATE TABLE participaciones (
     id INT AUTO_INCREMENT PRIMARY KEY,
     proyecto_id INT NOT NULL,
     usuario_id INT NOT NULL, 
@@ -144,39 +168,30 @@ CREATE TABLE IF NOT EXISTS participaciones (
     estado_vinculacion VARCHAR(50) DEFAULT 'Activo',
     FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
 );
--- 13. Tabla para manejar múltiples archivos por solicitud de convocatoria
-CREATE TABLE IF NOT EXISTS documentos_solicitud (
+
+-- 13. TABLA: DOCUMENTOS_SOLICITUD (Múltiples archivos por postulación)
+CREATE TABLE documentos_solicitud (
     id INT AUTO_INCREMENT PRIMARY KEY,
     solicitud_id INT NOT NULL,
     nombre_archivo VARCHAR(255) NOT NULL,
-    tipo_documento ENUM('Presupuesto', 'Cronograma', 'Honestidad Creativa', 'Plan de Inversión', 'Otros') NOT NULL,
+    tipo_documento ENUM('Presupuesto', 'Cronograma', 'Honestidad', 'Identidad', 'Otros') NOT NULL, -- Sincronizado con Convocatoria.jsx
     archivo_url VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE
 );
 
-
 -- ========================================================
--- INSERCIÓN DE DATOS INICIALES SEGUROS (SIN DUPLICADOS)
+-- PARAMETRIZACIÓN INICIAL REQUERIDA
 -- ========================================================
-
--- Insertar sedes base solo si no existen por nombre
-INSERT IGNORE INTO sedes (nombre_sede) VALUES 
+INSERT INTO sedes (nombre_sede) VALUES 
 ('Pereira'), 
 ('Ibagué'), 
+('Cartago'), -- Agregado para soportar el formulario de vinculación
 ('Bogotá');
 
--- Insertar convocatoria base solo si el título no se repite
-INSERT IGNORE INTO convocatorias (titulo, tipo, fecha_inicio, fecha_cierre, bases_url) VALUES 
-('Recursos de Reposición Convocatorias Internas de Investigación 2026-1', 'General', '2026-06-01 00:00:00', '2026-07-24 23:59:59', '/uploads/bases_2026_1.pdf');
-
--- Insertar credenciales de prueba de forma segura
-INSERT IGNORE INTO login (usuario_id, email, password) VALUES
-(1, 'admin@sinfoni.com', '$2b$10$y6R7qZ92M68kYI6kL8wYdeXpDbeX9Z2U3R4h5M6N7O8P2qwErTyUi'),
-(2, 'evaluador@sinfoni.com', '$2b$10$y6R7qZ92M68kYI6kL8wYdeXpDbeX9Z2U3R4h5M6N7O8P2qwErTyUi');
-
-INSERT INTO sinfoni_db.proyectos (codigo, titulo, director_id, fecha_inicio, fecha_fin, estado) 
-VALUES 
-('INV2494', 'ANÁLISIS DEL ENTORNO ACTUAL EN EL ÁMBITO DEPARTAMENTAL, NACIONAL', 1, '2019-07-10', '2020-07-10', 'Activo'),
-('INV3280', 'IMPLEMENTACIÓN DE UN MODELO DE APROPIACIÓN SOCIAL DEL CONOCIMIENTO', 1, '2022-05-01', '2025-11-30', 'Activo');
-
+ALTER TABLE usuarios 
+ADD COLUMN nivel_educativo VARCHAR(100) NULL,
+ADD COLUMN carrera_titulo VARCHAR(150) NULL,
+ADD COLUMN certificado_url VARCHAR(255) NULL;
+ALTER TABLE usuarios ADD COLUMN fecha_nacimiento DATE NULL;
+ALTER TABLE participaciones ADD COLUMN archivo_url VARCHAR(255) NULL;
