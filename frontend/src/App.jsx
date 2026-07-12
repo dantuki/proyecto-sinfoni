@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Login from './components/Login';
 import InicioCards from './components/InicioCards';
 import DatosPersonales from './components/DatosPersonales';
@@ -9,6 +9,73 @@ import Participaciones from './components/Participaciones';
 import Convocatorias from "./components/Convocatorias";
 import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 import CrearConvocatoria from "./components/CrearConvocatoria";
+
+// Sub-componente interno para la visualización del panel de control de usuarios del administrador
+function ControlUsuarios() {
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const obtenerUsuarios = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:5000/api/usuarios', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (res.ok && json.data) {
+          setUsuarios(json.data);
+        }
+      } catch (err) {
+        console.error("Error cargando el panel de auditoría de usuarios", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    obtenerUsuarios();
+  }, []);
+
+  if (loading) return <div className="text-white text-center font-bold">Cargando base de investigadores...</div>;
+
+  return (
+    <div className="w-full max-w-5xl bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+      <div className="mb-4">
+        <h2 className="text-lg font-bold text-slate-800">Control de Usuarios e Investigadores registrados</h2>
+        <p className="text-xs text-slate-500">Mapeo del sistema para control de accesos, roles y verificación documental.</p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-800 text-white text-xs font-bold uppercase">
+              <th className="p-3 rounded-l-lg">ID</th>
+              <th className="p-3">Nombre Completo</th>
+              <th className="p-3">Cédula</th>
+              <th className="p-3">Correo Electrónico</th>
+              <th className="p-3">Nivel Educativo</th>
+              <th className="p-3 rounded-r-lg">Rol Asignado</th>
+            </tr>
+          </thead>
+          <tbody className="text-xs text-slate-700 divide-y divide-slate-100">
+            {usuarios.map((u) => (
+              <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                <td className="p-3 font-bold text-indigo-600">#{u.id}</td>
+                <td className="p-3 font-semibold uppercase">{u.nombre_completo || 'No registrado'}</td>
+                <td className="p-3 font-mono">{u.cedula || '---'}</td>
+                <td className="p-3">{u.email}</td>
+                <td className="p-3 text-slate-500 font-medium">{u.nivel_educativo || 'No especificado'}</td>
+                <td className="p-3">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${u.rol === 'Admin' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                    {u.rol}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -63,6 +130,8 @@ function App() {
             }} 
           />
         );
+      case 'control_usuarios':
+        return <ControlUsuarios />;
       default:
         return (
           <div className="text-center bg-white p-8 rounded-xl mt-10 shadow-lg">
@@ -116,12 +185,18 @@ function App() {
               </div>
               <button 
                 onClick={() => {
-                  setConvocatoriaSeleccionada(null); // Nos aseguramos de que entre en modo creación
+                  setConvocatoriaSeleccionada(null);
                   setVistaActual('crear_convocatoria');
                 }} 
                 className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'crear_convocatoria' ? 'bg-[#5B9BD5]' : ''}`}
               >
                 ➕ Crear Convocatoria
+              </button>
+              <button 
+                onClick={() => setVistaActual('control_usuarios')} 
+                className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'control_usuarios' ? 'bg-[#5B9BD5]' : ''}`}
+              >
+                👥 Control de Usuarios
               </button>
             </>
           )}
