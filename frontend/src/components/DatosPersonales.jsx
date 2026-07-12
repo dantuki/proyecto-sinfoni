@@ -173,7 +173,7 @@ export default function DatosPersonales() {
 
       <div className="flex flex-col md:flex-row gap-8">
         
-        {/* Zona Lateral Izquierda: Foto de Perfil */}
+        {/* Zona Lateral Izquierda: Foto de Perfil e Identificaciones */}
         <div className="flex flex-col items-center w-full md:w-1/3 space-y-4">
           <div className="relative group w-40 h-40">
             {vistaPreviaFoto ? (
@@ -204,6 +204,12 @@ export default function DatosPersonales() {
                 <input type="file" accept="image/*" onChange={handleCambioFotoLocal} className="hidden" />
               </label>
             )}
+          </div>
+
+          {/* ID de Investigador (Nuevo Requerimiento) */}
+          <div className="text-center w-full bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 print:bg-white">
+            <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">ID Investigador SINFONI</p>
+            <p className="text-indigo-700 font-extrabold text-lg">#{userId || '---'}</p>
           </div>
 
           <div className="text-center w-full bg-slate-50 p-3 rounded-xl border border-slate-100 print:bg-white">
@@ -255,7 +261,6 @@ export default function DatosPersonales() {
               )}
             </div>
 
-            {/* Espacio del Correo con botón redirección a Gmail */}
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Correo Electrónico</label>
               <div className="flex items-center gap-2">
@@ -314,7 +319,6 @@ export default function DatosPersonales() {
             </div>
           </div>
 
-          {/* Bloque Académico */}
           <div className="bg-slate-50/50 p-4 rounded-xl border border-indigo-100 grid grid-cols-1 md:grid-cols-2 gap-4 print:bg-white print:border-0">
             <div className="col-span-2">
               <h4 className="text-xs font-bold text-indigo-600 uppercase tracking-wider print:text-slate-700">🎓 Formación Profesional</h4>
@@ -326,7 +330,7 @@ export default function DatosPersonales() {
                 <select
                   value={nivelEducativo}
                   onChange={(e) => setNivelEducativo(e.target.value)}
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm bg-white"
+                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm"
                 >
                   <option value="">Seleccione nivel...</option>
                   <option value="Pregrado / Tecnólogo">Pregrado / Tecnólogo</option>
@@ -378,7 +382,6 @@ export default function DatosPersonales() {
             </div>
           </div>
 
-          {/* Panel de Botones inferiores */}
           <div className="flex justify-end gap-3 pt-2 print:hidden">
             {isEditing ? (
               <>
