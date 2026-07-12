@@ -15,7 +15,7 @@ export default function DatosPersonales() {
   const [direccion, setDireccion] = useState('');
   const [fotoUrl, setFotoUrl] = useState('');
 
-  // Estados académicos y nuevos campos
+  // Estados académicos
   const [nivelEducativo, setNivelEducativo] = useState('');
   const [carreraTitulo, setCarreraTitulo] = useState('');
   const [certificadoUrl, setCertificadoUrl] = useState('');
@@ -61,7 +61,6 @@ export default function DatosPersonales() {
             setCarreraTitulo(usuario.carrera_titulo || '');
             setCertificadoUrl(usuario.certificado_url || '');
             
-            // Tratamiento de fechas para input tipo date (YYYY-MM-DD)
             if (usuario.fecha_nacimiento) {
               setFechaNacimiento(usuario.fecha_nacimiento.split('T')[0]);
             } else {
@@ -138,12 +137,10 @@ export default function DatosPersonales() {
     }
   };
 
-  // Función nativa para imprimir la pantalla de manera limpia
   const ejecutarImpresion = () => {
     window.print();
   };
 
-  // Formateador de fecha visual simple (DD/MM/AAAA) para la vista estática
   const formatearFechaVisual = (fechaStr) => {
     if (!fechaStr) return 'No registrada';
     const partes = fechaStr.split('-');
@@ -160,11 +157,9 @@ export default function DatosPersonales() {
   return (
     <div className="w-full max-w-4xl bg-white shadow-sm rounded-2xl border border-slate-100 p-8 mx-auto mt-6 space-y-6 print:border-0 print:shadow-none print:mt-0">
       
-      {/* Mensajes de Alerta (Ocultos en impresión) */}
       {error && <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center print:hidden">⚠️ {error}</div>}
       {mensajeExito && <div className="p-3 text-xs font-semibold text-emerald-600 bg-emerald-50 rounded-xl border border-emerald-100 text-center print:hidden">🎉 {mensajeExito}</div>}
 
-      {/* Botón Superior de Impresión (Estilo SINFONI - Oculto al imprimir) */}
       <div className="flex justify-between items-center border-b pb-4 border-slate-100 print:hidden">
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-tight">Sistema de Información para la Investigación</h3>
         <button
@@ -193,7 +188,6 @@ export default function DatosPersonales() {
                 alt="Perfil SINFONI" 
                 className="w-full h-full object-cover rounded-xl border-4 border-slate-100 shadow-sm"
                 onError={(e) => {
-                  // Fallback por si la ruta local falla temporalmente
                   e.target.src = "https://via.placeholder.com/150";
                 }}
               />
@@ -245,7 +239,6 @@ export default function DatosPersonales() {
               )}
             </div>
 
-            {/* Campo: Fecha de Nacimiento (Fix Solicitado) */}
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Fecha Nacimiento</label>
               {isEditing ? (
@@ -262,18 +255,34 @@ export default function DatosPersonales() {
               )}
             </div>
 
+            {/* Espacio del Correo con botón redirección a Gmail */}
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Correo Electrónico</label>
-              {isEditing ? (
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
-                />
-              ) : (
-                <p className="text-slate-600 text-xs font-medium bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0">{email}</p>
-              )}
+              <div className="flex items-center gap-2">
+                {isEditing ? (
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
+                  />
+                ) : (
+                  <p className="flex-1 text-slate-600 text-xs font-medium bg-white px-3 py-2 rounded-lg border border-slate-200/60 print:border-0 print:p-0">
+                    {email || 'No registrado'}
+                  </p>
+                )}
+                
+                {!isEditing && email && (
+                  <button
+                    type="button"
+                    onClick={() => window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank')}
+                    className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl border border-red-200 transition-colors flex items-center gap-1.5 print:hidden"
+                    title="Redactar correo en Gmail"
+                  >
+                    📧 <span className="hidden sm:inline">Contactar</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             <div>
@@ -296,7 +305,7 @@ export default function DatosPersonales() {
                 <input 
                   type="text" 
                   value={direccion} 
-                  onChange={(e) => set開ireccion(e.target.value)} 
+                  onChange={(e) => setDireccion(e.target.value)} 
                   className="w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none"
                 />
               ) : (
@@ -369,7 +378,7 @@ export default function DatosPersonales() {
             </div>
           </div>
 
-          {/* Panel de Botones inferiores (Ocultos por completo al Imprimir) */}
+          {/* Panel de Botones inferiores */}
           <div className="flex justify-end gap-3 pt-2 print:hidden">
             {isEditing ? (
               <>

@@ -12,20 +12,30 @@ export default function Participaciones({ usuario }) {
     rol_proyecto: 'Investigador Principal',
     horas_dedicacion: '',
     fecha_vinculacion: '',
-    estado_vinculacion: 'Pendiente' // Por defecto inicia en Pendiente de revisión
+    estado_vinculacion: 'Pendiente'
   });
 
   const token = localStorage.getItem('token');
   const esAdmin = usuario?.rol === 'Admin' || usuario?.rol === 'Administrador';
   const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
+  
+  // Obtenemos el ID del usuario actual de forma segura
+  const currentUserId = usuario?.id || usuario?.id_usuario || localStorage.getItem('userId');
 
   const cargarParticipaciones = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('http://localhost:5000/api/participaciones', {
+
+      // Si es Admin ve todo; si es Profesor, ve solo lo suyo apuntando a su ID
+      const url = esAdmin 
+        ? 'http://localhost:5000/api/participaciones' 
+        : `http://localhost:5000/api/participaciones/usuario/${currentUserId}`;
+
+      const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
       const data = await res.json();
       if (res.ok && data.success) {
         setParticipaciones(data.data || []);
@@ -42,10 +52,11 @@ export default function Participaciones({ usuario }) {
   };
 
   useEffect(() => {
-    cargarParticipaciones();
-  }, []);
+    if (currentUserId || esAdmin) {
+      cargarParticipaciones();
+    }
+  }, [currentUserId, esAdmin]);
 
-  // Función exclusiva del Admin para cambiar el estado de la postulación
   const handleCambiarEstado = async (id, nuevoEstado) => {
     try {
       const res = await fetch(`http://localhost:5000/api/participaciones/${id}`, {
@@ -59,7 +70,7 @@ export default function Participaciones({ usuario }) {
       const data = await res.json();
       if (res.ok) {
         alert(`Solicitud actualizada a: ${nuevoEstado}`);
-        cargarParticipaciones(); // Recarga la lista para ver los cambios
+        cargarParticipaciones();
       } else {
         alert(data.error || 'Error al actualizar el estado de la vinculación.');
       }
@@ -83,7 +94,14 @@ export default function Participaciones({ usuario }) {
       if (res.ok && data.success) {
         alert(data.message);
         setModalAbierto(false);
-        setFormData({ proyecto_id: '', usuario_id: '', rol_proyecto: 'Investigador Principal', horas_dedicacion: '', fecha_vinculacion: '', estado_vinculacion: 'Pendiente' });
+        setFormData({ 
+          proyecto_id: '', 
+          usuario_id: '', 
+          rol_proyecto: 'Investigador Principal', 
+          horas_dedicacion: '', 
+          fecha_vinculacion: '', 
+          estado_vinculacion: 'Pendiente' 
+        });
         cargarParticipaciones();
       } else {
         alert(data.error || 'Error al procesar la vinculación.');
@@ -93,7 +111,6 @@ export default function Participaciones({ usuario }) {
     }
   };
 
-  // Retorna los colores de la etiqueta según el estado dinámico
   const obtenerEstiloEstado = (estado) => {
     switch (estado) {
       case 'Activo':
@@ -108,7 +125,13 @@ export default function Participaciones({ usuario }) {
     }
   };
 
-  if (loading) return <div className="p-6 text-center text-white font-medium">Cargando registros de SINFONI...</div>;
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-600 font-medium bg-white rounded-xl shadow-lg max-w-5xl w-full">
+        Cargando registros de SINFONI...
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-lg w-full max-w-5xl">
@@ -132,7 +155,9 @@ export default function Participaciones({ usuario }) {
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}
 
       {participaciones.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">No se encontraron vinculaciones ni postulaciones registradas.</div>
+        <div className="text-center py-12 text-gray-400 font-medium border-2 border-dashed border-gray-100 rounded-xl">
+          No se encontraron vinculaciones ni postulaciones registradas en este momento.
+        </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 bg-white text-sm">
@@ -151,12 +176,18 @@ export default function Participaciones({ usuario }) {
             <tbody className="divide-y divide-gray-200 text-gray-700">
               {participaciones.map((part) => (
                 <tr key={part.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-xs font-bold text-blue-600">{part.codigo_proyecto || 'N/A'}</td>
-                  <td className="px-4 py-3 max-w-xs truncate font-medium">{part.titulo_proyecto}</td>
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-blue-600">
+                    {part.codigo_proyecto || part.proyecto_id || 'N/A'}
+                  </td>
+                  <td className="px-4 py-3 max-w-xs truncate font-medium">
+                    {part.titulo_proyecto || 'Propuesta de Investigación Sin Título'}
+                  </td>
                   {esAdmin && <td className="px-4 py-3 font-medium text-slate-600">{part.nombre_usuario}</td>}
                   <td className="px-4 py-3 text-xs">{part.rol_proyecto}</td>
                   <td className="px-4 py-3 text-center font-semibold">{part.horas_dedicacion} hrs</td>
-                  <td className="px-4 py-3 text-xs">{new Date(part.fecha_vinculacion).toLocaleDateString('es-CO')}</td>
+                  <td className="px-4 py-3 text-xs">
+                    {part.fecha_vinculacion ? new Date(part.fecha_vinculacion).toLocaleDateString('es-CO') : 'N/A'}
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${obtenerStyleEstado(part.estado_vinculacion)}`}>
                       {part.estado_vinculacion}
@@ -165,7 +196,6 @@ export default function Participaciones({ usuario }) {
                   {esAdmin && (
                     <td className="px-4 py-3 whitespace-nowrap text-center">
                       <div className="flex justify-center gap-2">
-                        {/* Botón para revisar los soportes en PDF subidos */}
                         <button
                           onClick={() => {
                             if (part.soporte_url || part.url_bases) {
@@ -180,7 +210,6 @@ export default function Participaciones({ usuario }) {
                           📄 Ver PDF
                         </button>
                         
-                        {/* Controles de Estado de Aprobación */}
                         {part.estado_vinculacion === 'Pendiente' ? (
                           <>
                             <button
