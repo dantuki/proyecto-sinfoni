@@ -6,7 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Validar la existencia física del directorio de almacenamiento
+// Validar la existencia física del directorio de almacenamiento de soportes
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
 }
@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// Filtro de control de extensiones
+// Filtro de seguridad para restringir archivos que no sean PDF
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
@@ -33,9 +33,10 @@ const upload = multer({
   }
 });
 
-// Rutas funcionales del módulo
+// Definición de endpoints del módulo de participaciones
 router.get('/', verificarToken, participacionesController.getParticipaciones);
 router.post('/', verificarToken, upload.single('archivo'), participacionesController.crearVinculacion);
 router.put('/:id', verificarToken, participacionesController.actualizarEstado);
+router.delete('/:id', verificarToken, participacionesController.eliminarParticipacion);
 
 module.exports = router;
