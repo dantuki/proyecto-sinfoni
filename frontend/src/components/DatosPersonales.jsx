@@ -208,7 +208,7 @@ export default function DatosPersonales() {
 
           {/* ID de Investigador (Nuevo Requerimiento) */}
           <div className="text-center w-full bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 print:bg-white">
-            <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">ID Investigador SINFONI</p>
+            <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">ID Investigador </p>
             <p className="text-indigo-700 font-extrabold text-lg">#{userId || '---'}</p>
           </div>
 
