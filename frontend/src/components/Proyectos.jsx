@@ -31,21 +31,23 @@ export default function Proyectos({ usuario, onVolver }) {
 
   const userId = localStorage.getItem('userId');
   const token = localStorage.getItem('token');
+  
+  // Normalización del rol de administrador
+  const esAdmin = usuario?.rol === 'Admin' || usuario?.rol === 'Administrador';
 
   // Cargar proyectos desde el Servidor
   const cargarProyectos = async () => {
     setLoading(true);
+    setError('');
     try {
-      let url = '';
-      if (usuario?.rol === 'Admin') {
-        url = `http://localhost:5000/api/proyectos?estado=${estadoFiltro}`;
-      } else {
-        if (!userId) {
-          setError('No se pudo identificar la sesión de usuario.');
-          setLoading(false);
-          return;
-        }
-        url = `http://localhost:5000/api/proyectos/director/${userId}?estado=${estadoFiltro}`;
+      let url = esAdmin
+        ? `http://localhost:5000/api/proyectos?estado=${estadoFiltro}`
+        : `http://localhost:5000/api/proyectos/director/${userId}?estado=${estadoFiltro}`;
+
+      if (!esAdmin && !userId) {
+        setError('No se pudo identificar la sesión de usuario de forma segura.');
+        setLoading(false);
+        return;
       }
 
       const response = await fetch(url, {
@@ -56,10 +58,10 @@ export default function Proyectos({ usuario, onVolver }) {
       if (response.ok) {
         setProyectos(resJson.data || []);
       } else {
-        setError(resJson.error || 'Error al cargar los proyectos.');
+        setError(resJson.error || 'Error al cargar los proyectos institucionales.');
       }
     } catch (err) {
-      setError('Error al conectar con el servidor.');
+      setError('Error crítico al conectar con el servidor backend.');
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export default function Proyectos({ usuario, onVolver }) {
     if (!verDocumentacion) {
       cargarProyectos();
     }
-  }, [estadoFiltro, verDocumentacion]);
+  }, [estadoFiltro, verDocumentacion, userId]);
 
   // Cargar documentos del proyecto seleccionado
   const cargarDocumentos = async (proyectoId) => {
@@ -83,7 +85,7 @@ export default function Proyectos({ usuario, onVolver }) {
         setDocumentos(resJson.data || []);
       }
     } catch (err) {
-      console.error('Error cargando documentos:', err);
+      console.error('Error cargando la bóveda de documentos:', err);
     } finally {
       setLoadingDocs(false);
     }
@@ -100,40 +102,36 @@ export default function Proyectos({ usuario, onVolver }) {
     setTimeout(() => setNotificacion(''), 4000);
   };
 
-  // Filtrado reactivo local por Código o Título (Lupa)
+  // Filtrado reactivo local por Código o Título
   const proyectosFiltrados = proyectos.filter((proj) => {
     const term = busquedaCodigoTitulo.toLowerCase().trim();
     if (!term) return true;
     return (
-      proj.codigo.toLowerCase().includes(term) ||
-      proj.titulo.toLowerCase().includes(term)
+      (proj.codigo?.toLowerCase() || '').includes(term) ||
+      (proj.titulo?.toLowerCase() || '').includes(term)
     );
   });
 
-  // ACCIÓN: Exportar a archivo CSV (Excel) optimizado para sistemas en español
+  // Exportar a archivo CSV para Excel (Sistemas en Español)
   const handleExportarExcel = () => {
     if (proyectosFiltrados.length === 0) {
       mostrarMensajeTemporal('⚠️ No hay filas disponibles para exportar.');
       return;
     }
 
-    // Cabeceras usando PUNTO Y COMA (Anulando el problema de la mezcla de celdas)
     const headers = ['CODIGO', 'TITULO', 'FECHA COMIENZO', 'FECHA FINALIZACION', 'ESTADO'];
     
-    // Convertir las filas del estado actual respetando los filtros aplicados
     const rows = proyectosFiltrados.map(p => [
-      p.codigo,
-      `"${p.titulo.replace(/"/g, '""')}"`,
+      p.codigo || '—',
+      `"${(p.titulo || '').replace(/"/g, '""')}"`,
       p.fecha_inicio ? new Date(p.fecha_inicio).toISOString().split('T')[0] : '—',
       p.fecha_fin ? new Date(p.fecha_fin).toISOString().split('T')[0] : '—',
-      p.estado
+      p.estado || '—'
     ].join(';'));
 
-    // \uFEFF soluciona las tildes y 'sep=;' obliga a Excel a separar las columnas limpiamente
     const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + ['sep=;', headers.join(';'), ...rows].join('\n');
     const encodedUri = encodeURI(csvContent);
     
-    // Capturar tiempo exacto (horas y minutos) para evitar nombres duplicados
     const ahora = new Date();
     const horas = String(ahora.getHours()).padStart(2, '0');
     const minutos = String(ahora.getMinutes()).padStart(2, '0');
@@ -149,7 +147,7 @@ export default function Proyectos({ usuario, onVolver }) {
     mostrarMensajeTemporal('📊 ¡Reporte Excel actualizado y descargado exitosamente!');
   };
 
-  // Guardar nuevo proyecto (Modal)
+  // Guardar nuevo proyecto (Modal MySQL)
   const handleGuardarProyecto = async (e) => {
     e.preventDefault();
     try {
@@ -169,10 +167,10 @@ export default function Proyectos({ usuario, onVolver }) {
         setNuevoProyecto({ codigo: '', titulo: '', fecha_inicio: '', fecha_fin: '', estado: 'Activo', director_id: '1' });
         cargarProyectos();
       } else {
-        alert(resJson.error || 'Error al guardar el proyecto');
+        alert(resJson.error || 'Error al guardar el proyecto institucional.');
       }
     } catch (err) {
-      alert('Error de conexión al intentar guardar.');
+      alert('Error de conexión al intentar guardar el registro.');
     }
   };
 
@@ -197,10 +195,10 @@ export default function Proyectos({ usuario, onVolver }) {
         setNuevoDoc({ nombre_archivo: '', tipo_documento: 'Propuesta Técnica' });
         cargarDocumentos(proyectoSeleccionado.id);
       } else {
-        alert(resJson.error || 'Error al guardar documento');
+        alert(resJson.error || 'Error al guardar el documento en el servidor.');
       }
     } catch (err) {
-      alert('Error al conectar con el servidor.');
+      alert('Error de red al conectar con el repositorio de ArchiveX.');
     }
   };
 
@@ -242,7 +240,7 @@ export default function Proyectos({ usuario, onVolver }) {
 
               <div className="space-y-1">
                 <label className="uppercase text-[10px] text-slate-400">Tipo de Documento Legal</label>
-                <select value={nuevoDoc.tipo_documento} onChange={(e) => setNuevoDoc({...nuevoDoc, tipo_documento: e.target.value})} className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-teal-600 font-medium text-slate-800">
+                <select value={nuevoDoc.tipo_documento} onChange={(e) => setNuevoDoc({...nuevoDoc, tipo_documento: e.target.value})} className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-teal-600 font-medium text-slate-800 bg-white">
                   <option value="Presupuesto Oficial">Presupuesto Oficial</option>
                   <option value="Cronograma de Actividades">Cronograma de Actividades</option>
                   <option value="Declaracion de Honestidad">Declaración de Honestidad Creativa</option>
@@ -295,7 +293,7 @@ export default function Proyectos({ usuario, onVolver }) {
                           </span>
                         </td>
                         <td className="px-6 py-3.5 text-center text-slate-400 text-[11px]">
-                          {new Date(doc.fecha_subida).toLocaleString('es-CO')}
+                          {doc.fecha_subida ? new Date(doc.fecha_subida).toLocaleString('es-CO') : '—'}
                         </td>
                       </tr>
                     ))}
@@ -310,7 +308,7 @@ export default function Proyectos({ usuario, onVolver }) {
         /* PLANILLA CENTRAL DE PROYECTOS (VISTA DE TABLA PRINCIPAL) */
         <div className="space-y-4">
           
-          {/* PANEL DE BÚSQUEDA FLOTANTE (SE ACTIVA CON LA LUPA) */}
+          {/* PANEL DE BÚSQUEDA FLOTANTE */}
           {mostrarPanelFiltros && (
             <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner flex items-center gap-4 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="flex-1 flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5 shadow-sm">
@@ -337,13 +335,13 @@ export default function Proyectos({ usuario, onVolver }) {
                 <div className="flex items-center gap-2">
                   <span className="text-xl bg-teal-50 text-[#619c8f] p-1.5 rounded-lg">🟢</span>
                   <span className="font-bold uppercase text-slate-700 tracking-wide text-sm">
-                    {usuario?.rol === 'Admin' ? 'Gestión de Proyectos' : 'Mis Proyectos'}
+                    {esAdmin ? 'Gestión Global de Proyectos' : 'Mis Proyectos Asignados'}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <label className="text-slate-400 uppercase text-[10px]">Estado</label>
-                  <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)} className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none text-slate-700 font-medium shadow-sm">
+                  <select value={estadoFiltro} onChange={(e) => { setEstadoFiltro(e.target.value); setProyectoSeleccionado(null); }} className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none text-slate-700 font-medium shadow-sm">
                     <option value="">Todos</option>
                     <option value="Activo">Activo</option>
                     <option value="Liquidado">Liquidado</option>
@@ -355,7 +353,7 @@ export default function Proyectos({ usuario, onVolver }) {
 
               {/* ACCIONES DEL PANEL DE CONTROL */}
               <div className="flex items-center gap-2">
-                {usuario?.rol === 'Admin' && (
+                {esAdmin && (
                   <button onClick={() => setModalAbierto(true)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition flex items-center gap-1 border border-emerald-700">
                     ➕ Agregar Proyecto
                   </button>
@@ -365,15 +363,13 @@ export default function Proyectos({ usuario, onVolver }) {
                   onClick={() => proyectoSeleccionado ? setVerDocumentacion(true) : mostrarMensajeTemporal('⚠️ Selecciona un proyecto de la lista primero.')}
                   className={`px-3 py-1.5 font-bold rounded-lg transition border flex items-center gap-1 shadow-sm ${proyectoSeleccionado ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'}`}
                 >
-                  🔗 Documentación
+                  🔗 Documentación {proyectoSeleccionado && `(${proyectoSeleccionado.codigo})`}
                 </button>
 
-                {/* BOTÓN EXPORTAR FUNCIONAL */}
                 <button onClick={handleExportarExcel} className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-lg border border-slate-200 shadow-sm transition flex items-center gap-1">
                   📊 Exportar
                 </button>
 
-                {/* BOTÓN MOSTRAR FILTROS (LUPA) FUNCIONAL */}
                 <button 
                   onClick={() => setMostrarPanelFiltros(!mostrarPanelFiltros)} 
                   className={`px-3 py-1.5 font-bold rounded-lg border shadow-sm transition flex items-center gap-1 ${mostrarPanelFiltros ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}`}
@@ -384,7 +380,7 @@ export default function Proyectos({ usuario, onVolver }) {
             </div>
 
             <div className="bg-amber-50 border-b border-amber-100/60 px-6 py-2.5 flex items-center gap-2 text-[11px] text-amber-800 font-bold tracking-wide">
-              <span>ℹ️</span> Los importes aparecen en PESO COLOMBIANO (COP)
+              <span>ℹ️</span> Los importes y presupuestos se gestionan en PESO COLOMBIANO (COP)
             </div>
 
             {error && <div className="p-4 text-xs font-semibold text-red-600 bg-red-50 text-center border-b border-red-100">⚠️ {error}</div>}
@@ -441,7 +437,7 @@ export default function Proyectos({ usuario, onVolver }) {
         </div>
       )}
 
-      {/* FORMULARIO MODAL FLOTANTE (EXCLUSIVO ADMIN PARA NUEVOS PROYECTOS) */}
+      {/* FORMULARIO MODAL FLOTANTE (NUEVOS PROYECTOS) */}
       {modalAbierto && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden">
@@ -468,7 +464,7 @@ export default function Proyectos({ usuario, onVolver }) {
               </div>
               <div className="grid grid-cols-3 gap-2 items-center">
                 <label className="uppercase text-[10px] text-slate-400">Estado Inicial</label>
-                <select value={nuevoProyecto.estado} onChange={(e) => setNuevoProyecto({...nuevoProyecto, estado: e.target.value})} className="col-span-2 border border-slate-200 rounded-lg p-2 focus:outline-none focus:border-emerald-600 font-medium text-slate-800">
+                <select value={nuevoProyecto.estado} onChange={(e) => setNuevoProyecto({...nuevoProyecto, estado: e.target.value})} className="col-span-2 border border-slate-200 rounded-lg p-2 focus:outline-none focus:border-emerald-600 font-medium text-slate-800 bg-white">
                   <option value="Activo">Activo</option>
                   <option value="Liquidado">Liquidado</option>
                   <option value="En Evaluacion">En Evaluación</option>
