@@ -5,6 +5,7 @@ export default function Participaciones({ usuario }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [archivo, setArchivo] = useState(null);
   
   const [formData, setFormData] = useState({
     proyecto_id: '',
@@ -18,29 +19,25 @@ export default function Participaciones({ usuario }) {
   const token = localStorage.getItem('token');
   const esAdmin = usuario?.rol === 'Admin' || usuario?.rol === 'Administrador';
   const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
-  
   const currentUserId = usuario?.id || usuario?.id_usuario || localStorage.getItem('userId');
 
   const cargarParticipaciones = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // 🟢 CORREGIDO: Ambos roles consultan a la misma ruta. El Backend filtra usando el Token.
       const url = 'http://localhost:5000/api/participaciones';
 
       const res = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      // Control por si el backend responde con un error o página HTML no esperada
       if (!res.ok) {
         const txtError = await res.text();
         try {
           const jsonError = JSON.parse(txtError);
           setError(jsonError.error || 'No se pudieron consultar las participaciones.');
         } catch {
-          setError(`Error ${res.status}: El servidor no devolvió una respuesta JSON válida.`);
+          setError(`Error ${res.status}: El servidor no devolvió una respuesta válida.`);
         }
         setParticipaciones([]);
         return;
@@ -92,18 +89,34 @@ export default function Participaciones({ usuario }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Usamos FormData para empaquetar el flujo de datos mixtos (Texto + PDF)
+      const dataToSend = new FormData();
+      dataToSend.append('proyecto_id', formData.proyecto_id);
+      dataToSend.append('rol_proyecto', formData.rol_proyecto);
+      dataToSend.append('horas_dedicacion', formData.horas_dedicacion);
+      dataToSend.append('fecha_vinculacion', formData.fecha_vinculacion);
+      
+      if (esAdmin) {
+        dataToSend.append('usuario_id', formData.usuario_id);
+      }
+      if (archivo) {
+        dataToSend.append('archivo', archivo);
+      }
+
       const res = await fetch('http://localhost:5000/api/participaciones', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
+          // IMPORTANTE: Dejar vacío el Content-Type para que el navegador configure el boundary multipart automáticamente
         },
-        body: JSON.stringify(formData)
+        body: dataToSend
       });
+      
       const data = await res.json();
       if (res.ok && data.success) {
         alert(data.message);
         setModalAbierto(false);
+        setArchivo(null);
         setFormData({ 
           proyecto_id: '', 
           usuario_id: '', 
@@ -152,14 +165,12 @@ export default function Participaciones({ usuario }) {
             {esAdmin ? 'Panel global de administración y aprobación de propuestas.' : `Historial de propuestas de: ${nombreUsuario}`}
           </p>
         </div>
-        {esAdmin && (
-          <button
-            onClick={() => setModalAbierto(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow text-xs uppercase tracking-wider"
-          >
-            + Vincular Manualmente
-          </button>
-        )}
+        <button
+          onClick={() => setModalAbierto(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors shadow text-xs uppercase tracking-wider"
+        >
+          {esAdmin ? '+ Vincular Manualmente' : '+ Solicitar Vinculación'}
+        </button>
       </div>
 
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}
@@ -180,7 +191,7 @@ export default function Participaciones({ usuario }) {
                 <th className="px-4 py-3">Dedicación</th>
                 <th className="px-4 py-3">Fecha</th>
                 <th className="px-4 py-3">Estado</th>
-                {esAdmin && <th className="px-4 py-3 text-center">Acciones de Control</th>}
+                <th className="px-4 py-3 text-center">Acciones de Control</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 text-gray-700">
@@ -199,49 +210,50 @@ export default function Participaciones({ usuario }) {
                     {part.fecha_vinculacion ? new Date(part.fecha_vinculacion).toLocaleDateString('es-CO') : 'N/A'}
                   </td>
                   <td className="px-4 py-3">
-                    {/* 🟢 CORREGIDO: Se cambió 'obtenerStyleEstado' por 'obtenerEstiloEstado' */}
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold uppercase ${obtenerEstiloEstado(part.estado_vinculacion)}`}>
                       {part.estado_vinculacion}
                     </span>
                   </td>
-                  {esAdmin && (
-                    <td className="px-4 py-3 whitespace-nowrap text-center">
-                      <div className="flex justify-center gap-2">
-                        <button
-                          onClick={() => {
-                            if (part.soporte_url || part.url_bases) {
-                              window.open(part.soporte_url || part.url_bases, '_blank');
-                            } else {
-                              alert('El docente no cargó ningún documento PDF de soporte para esta postulación.');
-                            }
-                          }}
-                          className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold border transition"
-                          title="Ver archivos cargados por el profesor"
-                        >
-                          📄 Ver PDF
-                        </button>
-                        
-                        {part.estado_vinculacion === 'Pendiente' ? (
-                          <>
-                            <button
-                              onClick={() => handleCambiarEstado(part.id, 'Aprobado')}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition"
-                            >
-                              Aprobar ✔
-                            </button>
-                            <button
-                              onClick={() => handleCambiarEstado(part.id, 'Rechazado')}
-                              className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold transition"
-                            >
-                              Rechazar ✖
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 italic">Evaluado</span>
-                        )}
-                      </div>
-                    </td>
-                  )}
+                  <td className="px-4 py-3 whitespace-nowrap text-center">
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (part.soporte_url) {
+                            window.open(part.soporte_url, '_blank');
+                          } else {
+                            alert('No se cargó ningún documento PDF de soporte para esta postulación.');
+                          }
+                        }}
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold border transition"
+                        title="Ver soporte digital cargado"
+                      >
+                        📄 Ver PDF
+                      </button>
+                      
+                      {esAdmin && (
+                        <>
+                          {part.estado_vinculacion === 'Pendiente' ? (
+                            <>
+                              <button
+                                onClick={() => handleCambiarEstado(part.id, 'Aprobado')}
+                                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition"
+                              >
+                                Aprobar ✔
+                              </button>
+                              <button
+                                onClick={() => handleCambiarEstado(part.id, 'Rechazado')}
+                                className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-bold transition"
+                              >
+                                Rechazar ✖
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">Evaluado</span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -249,11 +261,13 @@ export default function Participaciones({ usuario }) {
         </div>
       )}
 
-      {/* MODAL DE VINCULACIÓN MANUAL */}
+      {/* MODAL CON REFACTORIZACIÓN COMPORTAMENTAL */}
       {modalAbierto && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Nueva Vinculación de Investigador</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              {esAdmin ? 'Nueva Vinculación Manual (Admin)' : 'Formulario de Postulación de Propuesta'}
+            </h3>
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Proyecto</label>
@@ -266,17 +280,21 @@ export default function Participaciones({ usuario }) {
                   onChange={(e) => setFormData({ ...formData, proyecto_id: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Docente / Usuario</label>
-                <input
-                  type="number"
-                  required
-                  placeholder="Ej: 4"
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  value={formData.usuario_id}
-                  onChange={(e) => setFormData({ ...formData, usuario_id: e.target.value })}
-                />
-              </div>
+
+              {esAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Docente / Usuario</label>
+                  <input
+                    type="number"
+                    required
+                    placeholder="Ej: 4"
+                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    value={formData.usuario_id}
+                    onChange={(e) => setFormData({ ...formData, usuario_id: e.target.value })}
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Rol en el Proyecto</label>
                 <select
@@ -289,6 +307,7 @@ export default function Participaciones({ usuario }) {
                   <option value="Asistente de Investigación">Asistente de Investigación</option>
                 </select>
               </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Horas Semanales Dedicadas</label>
                 <input
@@ -300,6 +319,7 @@ export default function Participaciones({ usuario }) {
                   onChange={(e) => setFormData({ ...formData, horas_dedicacion: e.target.value })}
                 />
               </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Fecha de Vinculación</label>
                 <input
@@ -310,10 +330,27 @@ export default function Participaciones({ usuario }) {
                   onChange={(e) => setFormData({ ...formData, fecha_vinculacion: e.target.value })}
                 />
               </div>
+
+              {!esAdmin && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Soporte Aval (Formato PDF obligatorio)</label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    required
+                    className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border p-2 rounded-lg"
+                    onChange={(e) => setArchivo(e.target.files[0])}
+                  />
+                </div>
+              )}
+
               <div className="flex justify-end space-x-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setModalAbierto(false)}
+                  onClick={() => {
+                    setModalAbierto(false);
+                    setArchivo(null);
+                  }}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition-colors"
                 >
                   Cancelar
@@ -322,7 +359,7 @@ export default function Participaciones({ usuario }) {
                   type="submit"
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow"
                 >
-                  Guardar Cambios
+                  {esAdmin ? 'Vincular Directo' : 'Enviar Postulación'}
                 </button>
               </div>
             </form>
