@@ -1,23 +1,20 @@
 const db = require('../config/db');
 
-// 1. Obtener participaciones segmentadas por Rol
+// 1. Obtener listado de participaciones o postulaciones
 exports.getParticipaciones = async (req, res) => {
   try {
-    // Protección contra undefined en el middleware
     const usuarioLogueado = req.usuario || req.user; 
-
     if (!usuarioLogueado) {
-      console.log('⚠️ [SINFONI DEBUG]: No se detectó la sesión del usuario.');
       return res.status(401).json({ error: 'No se encontraron las credenciales del usuario.' });
     }
 
-    // Extraemos el id y el rol mapeados del token
     const usuarioId = usuarioLogueado.id || usuarioLogueado.usuarioId || usuarioLogueado.id_usuario;
     const rol = usuarioLogueado.rol;
 
-    // Consulta adaptada al 100% a tu script SQL real
+    // Proyectamos part.archivo_url como 'soporte_url' para acoplarnos al mapeo nativo del Frontend
     let query = `
       SELECT part.*, 
+             part.archivo_url AS soporte_url,
              p.codigo AS codigo_proyecto, 
              p.titulo AS titulo_proyecto,
              u.nombre_completo AS nombre_usuario,
@@ -28,9 +25,7 @@ exports.getParticipaciones = async (req, res) => {
     `;
     
     const params = [];
-
-    // Según tu SQL, el rol es estrictamente 'Admin'
-    if (rol !== 'Admin') {
+    if (rol !== 'Admin' && rol !== 'Administrador') {
       query += ` WHERE part.usuario_id = ?`;
       params.push(usuarioId);
     }
@@ -39,40 +34,79 @@ exports.getParticipaciones = async (req, res) => {
     res.json({ success: true, data: results });
   } catch (err) {
     console.error('❌ Error en getParticipaciones:', err);
-    res.status(500).json({ error: 'Error interno del servidor al procesar la solicitud.' });
+    res.status(500).json({ error: 'Error interno al consultar las vinculaciones.' });
   }
 };
 
-// 2. Crear una nueva vinculación de investigador (Acción de Admin)
+// 2. Procesar postulaciones del Docente o registros manuales del Admin
 exports.crearVinculacion = async (req, res) => {
-  const { proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion, estado_vinculacion } = req.body;
-
-  if (!proyecto_id || !usuario_id || !rol_proyecto || !horas_dedicacion || !fecha_vinculacion) {
-    return res.status(400).json({ error: 'Todos los campos obligatorios deben ser completados.' });
-  }
-
   try {
+    const usuarioLogueado = req.usuario || req.user;
+    if (!usuarioLogueado) {
+      return res.status(401).json({ error: 'Operación no autorizada.' });
+    }
+
+    const rol = usuarioLogueado.rol;
+    const currentUserId = usuarioLogueado.id || usuarioLogueado.usuarioId || usuarioLogueado.id_usuario;
+
+    const { proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion } = req.body;
+
+    // Validar campos obligatorios de negocio
+    if (!proyecto_id || !rol_proyecto || !horas_dedicacion || !fecha_vinculacion) {
+      return res.status(400).json({ error: 'Faltan parámetros críticos para procesar el registro.' });
+    }
+
+    // Si es Admin, toma el usuario asignado del input. Si es Docente, se autoasignará su propio ID del token
+    const esAdmin = rol === 'Admin' || rol === 'Administrador';
+    const finalUsuarioId = esAdmin ? usuario_id : currentUserId;
+    const finalEstado = esAdmin ? 'Activo' : 'Pendiente';
+
+    // Construir la URL pública de acceso para el PDF si fue cargado
+    const archivo_url = req.file ? `http://localhost:5000/uploads/${req.file.filename}` : null;
+
     const query = `
-      INSERT INTO participaciones (proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion, estado_vinculacion)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO participaciones (proyecto_id, usuario_id, rol_proyecto, horas_dedicacion, fecha_vinculacion, estado_vinculacion, archivo_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
+    
     const valores = [
       proyecto_id, 
-      usuario_id, 
+      finalUsuarioId, 
       rol_proyecto, 
       horas_dedicacion, 
       fecha_vinculacion, 
-      estado_vinculacion || 'Activo'
+      finalEstado,
+      archivo_url
     ];
 
     const [result] = await db.query(query, valores);
     res.status(201).json({
       success: true,
-      message: '¡Investigador vinculado con éxito al proyecto!',
+      message: esAdmin ? '¡Investigador vinculado con éxito!' : '¡Tu postulación ha sido enviada al Administrador con éxito!',
       id: result.insertId
     });
   } catch (err) {
     console.error('❌ Error en crearVinculacion:', err);
-    res.status(500).json({ error: 'Error de consistencia al insertar en la base de datos.' });
+    res.status(500).json({ error: 'Error de consistencia al guardar la vinculación.' });
+  }
+};
+
+// 3. Modificar el estado de una vinculación (Aprobado/Rechazado)
+exports.actualizarEstado = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado_vinculacion } = req.body;
+
+    if (!estado_vinculacion) {
+      return res.status(400).json({ error: 'El nuevo estado no fue especificado.' });
+    }
+
+    const query = `UPDATE participaciones SET estado_vinculacion = ? WHERE id = ?`;
+    await db.query(query, [estado_vinculacion, id]);
+
+    res.json({ success: true, message: 'El estado de la propuesta se actualizó exitosamente.' });
+  } catch (err) {
+    console.error('❌ Error en actualizarEstado:', err);
+    res.status(500).json({ error: 'Error al cambiar el estado del registro en el servidor.' });
   }
 };
