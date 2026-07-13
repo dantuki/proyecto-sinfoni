@@ -10,7 +10,7 @@ import Convocatorias from "./components/Convocatorias";
 import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 import CrearConvocatoria from "./components/CrearConvocatoria";
 
-// Sub-componente interno para la visualización del panel de control de usuarios del administrador
+// Sub-componente interno para la visualización del panel de control de usuarios
 function ControlUsuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +82,14 @@ function App() {
   const [vistaActual, setVistaActual] = useState('inicio');
   const [convocatoriaSeleccionada, setConvocatoriaSeleccionada] = useState(null);
 
+  // Guardar datos clave en localStorage al autenticar para asegurar persistencia
+  useEffect(() => {
+    if (usuario) {
+      if (usuario.id) localStorage.setItem('userId', usuario.id);
+      if (usuario.rol) localStorage.setItem('userRol', usuario.rol);
+    }
+  }, [usuario]);
+
   if (!usuario) {
     return <Login alAutenticar={setUsuario} />;
   }
@@ -96,6 +104,11 @@ function App() {
     setVistaActual('crear_convocatoria');
   };
 
+  const cambiarVistaLimpia = (nuevaVista) => {
+    setConvocatoriaSeleccionada(null); // Limpia contextos anteriores al saltar de sección
+    setVistaActual(nuevaVista);
+  };
+
   const renderizarVista = () => {
     switch(vistaActual) {
       case 'inicio':
@@ -105,7 +118,7 @@ function App() {
       case 'noticias':
         return <Noticias usuario={usuario} />;
       case 'formulario':
-        return <FormularioSolicitud usuario={usuario} />;
+        return <FormularioSolicitud usuario={usuario} convocatoria={convocatoriaSeleccionada} />;
       case 'proyectos':
         return <Proyectos usuario={usuario} onVolver={() => setVistaActual('inicio')} />;
       case 'participaciones':
@@ -148,7 +161,7 @@ function App() {
       
       {/* SIDEBAR */}
       <aside className="w-64 bg-[#2d3748] text-white flex flex-col shadow-2xl z-20">
-        <div className="p-6 bg-white border-b border-slate-200 text-center cursor-pointer" onClick={() => setVistaActual('inicio')}>
+        <div className="p-6 bg-white border-b border-slate-200 text-center cursor-pointer" onClick={() => cambiarVistaLimpia('inicio')}>
           <h1 className="text-2xl font-extrabold tracking-tight">
             <span className="text-[#5B9BD5]">ARCHIVE</span><span className="text-[#70AD47]">X</span>
           </h1>
@@ -158,21 +171,21 @@ function App() {
         </div>
         <nav className="flex-1 overflow-y-auto py-4">
           <button 
-            onClick={() => setVistaActual('inicio')} 
+            onClick={() => cambiarVistaLimpia('inicio')} 
             className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'inicio' ? 'bg-[#5B9BD5]' : ''}`}
           >
             🏠 Inicio / Dashboard
           </button>
 
           <button 
-            onClick={() => setVistaActual('convocatorias_abiertas')} 
+            onClick={() => cambiarVistaLimpia('convocatorias_abiertas')} 
             className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'convocatorias_abiertas' ? 'bg-[#5B9BD5]' : ''}`}
           >
             📢 Convocatorias Abiertas
           </button>
 
           <button 
-            onClick={() => setVistaActual('participaciones')} 
+            onClick={() => cambiarVistaLimpia('participaciones')} 
             className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'participaciones' ? 'bg-[#5B9BD5]' : ''}`}
           >
             📋 Mis Participaciones
@@ -193,7 +206,7 @@ function App() {
                 ➕ Crear Convocatoria
               </button>
               <button 
-                onClick={() => setVistaActual('control_usuarios')} 
+                onClick={() => cambiarVistaLimpia('control_usuarios')} 
                 className={`w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-2 ${vistaActual === 'control_usuarios' ? 'bg-[#5B9BD5]' : ''}`}
               >
                 👥 Control de Usuarios
@@ -233,7 +246,7 @@ function App() {
         <div className="flex-1 overflow-y-auto p-8 z-10 flex flex-col items-center w-full">
           {vistaActual !== 'inicio' && (
             <button 
-              onClick={() => setVistaActual('inicio')}
+              onClick={() => cambiarVistaLimpia('inicio')}
               className="self-start mb-4 bg-white/20 hover:bg-white/40 text-white px-4 py-2 rounded-lg backdrop-blur-sm transition flex items-center gap-2"
             >
               ← Volver al Panel
