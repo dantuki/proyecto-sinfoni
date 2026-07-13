@@ -6,8 +6,15 @@ export default function Participaciones({ usuario }) {
   const [usuarios, setUsuarios] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Modales de control
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [modalRechazoAbierto, setModalRechazoAbierto] = useState(false);
+  
+  // Estados para archivos y formularios
   const [archivo, setArchivo] = useState(null);
+  const [idSeleccionadoRechazo, setIdSeleccionadoRechazo] = useState(null);
+  const [motivoRechazo, setMotivoRechazo] = useState('');
   
   const [formData, setFormData] = useState({
     proyecto_id: '',
@@ -23,7 +30,6 @@ export default function Participaciones({ usuario }) {
   const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
   const currentUserId = usuario?.id || usuario?.id_usuario || localStorage.getItem('userId');
 
-  // Carga proyectos respetando el formato json.data del backend
   const cargarProyectosDisponibles = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/proyectos', {
@@ -42,7 +48,6 @@ export default function Participaciones({ usuario }) {
     }
   };
 
-  // Carga usuarios respetando el formato exacto de json.data que usa App.jsx
   const cargarUsuariosDisponibles = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/usuarios', {
@@ -50,7 +55,6 @@ export default function Participaciones({ usuario }) {
       });
       if (res.ok) {
         const json = await res.json();
-        
         if (json.data && Array.isArray(json.data)) {
           setUsuarios(json.data);
         } else if (Array.isArray(json)) {
@@ -62,7 +66,6 @@ export default function Participaciones({ usuario }) {
     }
   };
 
-  // Carga las participaciones registradas
   const cargarParticipaciones = async () => {
     try {
       setLoading(true);
@@ -90,8 +93,6 @@ export default function Participaciones({ usuario }) {
         setParticipaciones(json.data);
       } else if (Array.isArray(json)) {
         setParticipaciones(json);
-      } else if (json.success && Array.isArray(json.data)) {
-        setParticipaciones(json.data);
       } else {
         setParticipaciones([]);
       }
@@ -113,7 +114,7 @@ export default function Participaciones({ usuario }) {
     }
   }, [currentUserId, esAdmin]);
 
-  const handleCambiarEstado = async (id, nuevoEstado) => {
+  const handleAprobarEstado = async (id) => {
     try {
       const res = await fetch(`http://localhost:5000/api/participaciones/${id}`, {
         method: 'PUT',
@@ -121,17 +122,50 @@ export default function Participaciones({ usuario }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ estado_vinculacion: nuevoEstado })
+        body: JSON.stringify({ estado_vinculacion: 'Aprobado' })
       });
       const data = await res.json();
       if (res.ok) {
-        alert(`Solicitud actualizada a: ${nuevoEstado}`);
+        alert('Solicitud aprobada e integrada con éxito.');
         cargarParticipaciones();
       } else {
         alert(data.error || 'Error al actualizar el estado de la vinculación.');
       }
     } catch (err) {
       alert('Error de red al intentar conectar con el servidor.');
+    }
+  };
+
+  const handleConfirmarRechazo = async (e) => {
+    e.preventDefault();
+    if (!motivoRechazo.trim()) {
+      alert('Por favor exponga una razón válida para el rechazo del docente.');
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/participaciones/${idSeleccionadoRechazo}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          estado_vinculacion: 'Rechazado',
+          motivo_rechazo: motivoRechazo 
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Postulación rechazada. Se ha guardado el motivo de retroalimentación.');
+        setModalRechazoAbierto(false);
+        setMotivoRechazo('');
+        setIdSeleccionadoRechazo(null);
+        cargarParticipaciones();
+      } else {
+        alert(data.error || 'Error al procesar el rechazo.');
+      }
+    } catch (err) {
+      alert('Error de red al conectar con el servidor.');
     }
   };
 
@@ -268,8 +302,15 @@ export default function Participaciones({ usuario }) {
                   <td className="px-4 py-3 font-mono text-xs font-bold text-blue-600">
                     {part.codigo_proyecto || part.proyecto_id || 'N/A'}
                   </td>
-                  <td className="px-4 py-3 max-w-xs truncate font-medium">
-                    {part.titulo_proyecto || 'Propuesta de Investigación Sin Título'}
+                  <td className="px-4 py-3 max-w-xs font-medium">
+                    <div className="truncate text-slate-900">{part.titulo_proyecto || 'Propuesta de Investigación Sin Título'}</div>
+                    
+                    {/* VISUALIZACIÓN DE RETROALIMENTACIÓN DE RECHAZO */}
+                    {part.estado_vinculacion === 'Rechazado' && part.motivo_rechazo && (
+                      <div className="text-[11px] text-red-600 font-normal mt-1 bg-red-50 p-2 rounded-lg border border-red-100 max-w-xs">
+                        <span className="font-bold">Motivo:</span> {part.motivo_rechazo}
+                      </div>
+                    )}
                   </td>
                   {esAdmin && <td className="px-4 py-3 font-medium text-slate-600">{part.nombre_usuario || 'Docente'}</td>}
                   <td className="px-4 py-3 text-xs">{part.rol_proyecto}</td>
@@ -303,13 +344,16 @@ export default function Participaciones({ usuario }) {
                           {part.estado_vinculacion === 'Pendiente' ? (
                             <>
                               <button
-                                onClick={() => handleCambiarEstado(part.id, 'Aprobado')}
+                                onClick={() => handleAprobarEstado(part.id)}
                                 className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition"
                               >
                                 ✔ Aprobar
                               </button>
                               <button
-                                onClick={() => handleCambiarEstado(part.id, 'Rechazado')}
+                                onClick={() => {
+                                  setIdSeleccionadoRechazo(part.id);
+                                  setModalRechazoAbierto(true);
+                                }}
                                 className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-bold transition"
                               >
                                 ✖ Rechazar
@@ -346,7 +390,6 @@ export default function Participaciones({ usuario }) {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
               
-              {/* SELECCIONAR PROYECTO */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Proyecto de Investigación</label>
                 <select
@@ -364,7 +407,6 @@ export default function Participaciones({ usuario }) {
                 </select>
               </div>
 
-              {/* SELECCIONAR DOCENTE AUTOMATIZADO */}
               {esAdmin && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Docente / Usuario</label>
@@ -459,6 +501,50 @@ export default function Participaciones({ usuario }) {
           </div>
         </div>
       )}
+
+      {/* MODAL SECUNDARIO: MOTIVO DE RECHAZO (FEEDBACK ADM) */}
+      {modalRechazoAbierto && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 text-left">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Especificar Motivo de Rechazo</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Por favor, detalla las razones del rechazo. Esta justificación será visible para el docente postulante desde su panel de control.
+            </p>
+            <form onSubmit={handleConfirmarRechazo} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Retroalimentación o Comentario</label>
+                <textarea
+                  required
+                  rows="4"
+                  placeholder="Ej: El archivo PDF de soporte se encuentra ilegible o no corresponde al formato avalado institucionalmente."
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none"
+                  value={motivoRechazo}
+                  onChange={(e) => setMotivoRechazo(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalRechazoAbierto(false);
+                    setMotivoRechazo('');
+                    setIdSeleccionadoRechazo(null);
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors shadow"
+                >
+                  Confirmar Rechazo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+    )}
     </div>
   );
 }
