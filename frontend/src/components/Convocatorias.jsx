@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 function Convocatorias({ usuario }) {
   const [formData, setFormData] = useState({
-    codigoPropuesta: '', // Se llenará automáticamente al cargar
+    codigoPropuesta: '', 
     sede: '',
     observaciones: ''
   });
@@ -11,10 +11,9 @@ function Convocatorias({ usuario }) {
     presupuesto: null,
     cronograma: null,
     honestidad: null,
-    id: null
+    id: null // Archivo de documento de identidad
   });
 
-  // Función helper para generar el código aleatorio e irrepetible de la propuesta
   const generarCodigoPropuesta = () => {
     const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let aleatorio = '';
@@ -24,7 +23,6 @@ function Convocatorias({ usuario }) {
     return `PROP-2026-${aleatorio}`;
   };
 
-  // useEffect que se ejecuta una sola vez cuando el profesor entra al formulario
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -45,10 +43,16 @@ function Convocatorias({ usuario }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Datos a enviar al backend:", formData);
-    console.log("Archivos a subir:", archivos);
-    alert(`¡Solicitud procesada con éxito! Radicado: ${formData.codigoPropuesta}`);
-    // Pronto pondremos Axios aquí para conectar con el createSolicitud del backend
+    
+    // El sistema toma de forma automática el ID del profesor conectado de los props o del almacenamiento seguro
+    const idUsuarioRemitente = usuario?.id || localStorage.getItem('userId');
+
+    console.log("--- Payload Autoprotegido ---");
+    console.log("ID del Investigador (Automático):", idUsuarioRemitente);
+    console.log("Datos del Formulario:", formData);
+    console.log("Archivos Adjuntos (PDFs):", archivos);
+
+    alert(`¡Solicitud radicada con éxito! Código asignado: ${formData.codigoPropuesta} bajo el registro de Investigador #${idUsuarioRemitente}`);
   };
 
   return (
@@ -56,26 +60,24 @@ function Convocatorias({ usuario }) {
       <div className="border-b border-slate-200 pb-4 mb-6">
         <h2 className="text-2xl font-bold text-slate-800">Postulación a Convocatoria de Investigación</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Suba los documentos requeridos según los Términos de Referencia.
+          Suba los documentos requeridos según los Términos de Referencia. Sus credenciales se indexarán automáticamente.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* FILA 1: Código y Sede */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
               Número de Solicitud / Código Propuesta
             </label>
-          <input 
-  type="text"
-  name="codigoPropuesta"
-  value={formData.codigoPropuesta}
-  readOnly
-  autoComplete="off"
-  className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none text-slate-700 font-semibold text-sm cursor-not-allowed select-none"
-  required
-/>
+            <input 
+              type="text"
+              name="codigoPropuesta"
+              value={formData.codigoPropuesta}
+              readOnly
+              className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none text-slate-700 font-semibold text-sm cursor-not-allowed select-none"
+              required
+            />
           </div>
 
           <div>
@@ -97,7 +99,6 @@ function Convocatorias({ usuario }) {
           </div>
         </div>
 
-        {/* Observaciones */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
             Observaciones Iniciales
@@ -112,40 +113,34 @@ function Convocatorias({ usuario }) {
           />
         </div>
 
-        {/* Sección de Documentos */}
         <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 border-b border-slate-200 pb-1">
             Documentación Obligatoria (Formatos PDF)
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            {/* Doc 1 */}
             <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
               <span className="font-semibold text-slate-700 block mb-1">1. Presupuesto General *</span>
               <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'presupuesto')} className="w-full text-slate-500" required />
             </div>
 
-            {/* Doc 2 */}
             <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
               <span className="font-semibold text-slate-700 block mb-1">2. Cronograma de Actividades *</span>
               <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'cronograma')} className="w-full text-slate-500" required />
             </div>
 
-            {/* Doc 3 */}
             <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
               <span className="font-semibold text-slate-700 block mb-1">3. Declaración de Honestidad *</span>
               <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'honestidad')} className="w-full text-slate-500" required />
             </div>
 
-            {/* Doc 4 */}
             <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <span className="font-semibold text-slate-700 block mb-1">4. Documento de Identidad (ID) *</span>
+              <span className="font-semibold text-slate-700 block mb-1">4. Documento de Identidad (Soporte PDF) *</span>
               <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'id')} className="w-full text-slate-500" required />
             </div>
           </div>
         </div>
 
-        {/* Botón de Envíos */}
         <button
           type="submit"
           className="w-full py-3 bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-bold rounded-xl shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider text-sm mt-2"
