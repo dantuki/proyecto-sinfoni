@@ -40,7 +40,6 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
 
       if (response.data.status === 'success') {
         alert('Convocatoria eliminada correctamente');
-        // Actualizamos la lista local filtrando la eliminada
         setConvocatorias(prev => prev.filter(c => c.id !== id));
       }
     } catch (err) {
@@ -102,7 +101,6 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
           {convocatorias.map((conv) => (
             <div key={conv.id} className="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:shadow-2xl transition-all">
               
-              {/* Información de la convocatoria */}
               <div className="flex-1 space-y-2 text-left w-full">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="bg-[#5B9BD5]/20 text-[#3a7cb8] text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -121,11 +119,10 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
                 
                 <div className="flex flex-wrap gap-6 pt-2 text-xs font-semibold text-slate-500">
                   <div>💰 Topes: <span className="text-slate-700">{conv.presupuesto_max || 'No especificado'}</span></div>
-                  <div>📋 Modalidad: <span className="text-slate-700">{conv.modalidad || 'No especificada'}</span></div>
+                  <div>📋 Modalidad: <span className="text-slate-700">{conv.modalidad || 'No específica'}</span></div>
                 </div>
               </div>
 
-              {/* Botones de acción según Rol */}
               <div className="w-full md:w-auto flex flex-col sm:flex-row md:flex-col gap-2 flex-shrink-0">
                 {esAdmin ? (
                   <>
