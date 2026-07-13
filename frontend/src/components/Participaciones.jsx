@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 export default function Participaciones({ usuario }) {
   const [participaciones, setParticipaciones] = useState([]);
-  const [proyectos, setProyectos] = useState([]); // Estado nuevo para almacenar los proyectos de la BD
-  const [usuarios, setUsuarios] = useState([]); // Estado nuevo para almacenar los usuarios/docentes de la BD
+  const [proyectos, setProyectos] = useState([]); 
+  const [usuarios, setUsuarios] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -23,7 +23,6 @@ export default function Participaciones({ usuario }) {
   const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
   const currentUserId = usuario?.id || usuario?.id_usuario || localStorage.getItem('userId');
 
-  // Función para cargar los proyectos reales existentes en la base de datos
   const cargarProyectosDisponibles = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/proyectos', {
@@ -42,7 +41,6 @@ export default function Participaciones({ usuario }) {
     }
   };
 
-  // Función para cargar los usuarios reales existentes en la base de datos (Exclusivo Admin)
   const cargarUsuariosDisponibles = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/usuarios', {
@@ -50,10 +48,16 @@ export default function Participaciones({ usuario }) {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.success) {
-          setUsuarios(data.data || []);
-        } else if (Array.isArray(data)) {
+        console.log('Estructura detectada en /api/usuarios:', data); 
+        
+        if (Array.isArray(data)) {
           setUsuarios(data);
+        } else if (data.success && Array.isArray(data.data)) {
+          setUsuarios(data.data);
+        } else if (Array.isArray(data.usuarios)) {
+          setUsuarios(data.usuarios);
+        } else if (data.data && Array.isArray(data.data.usuarios)) {
+          setUsuarios(data.data.usuarios);
         }
       }
     } catch (err) {
@@ -103,7 +107,7 @@ export default function Participaciones({ usuario }) {
       cargarParticipaciones();
       cargarProyectosDisponibles(); 
       if (esAdmin) {
-        cargarUsuariosDisponibles(); // Carga los usuarios si el usuario es Admin
+        cargarUsuariosDisponibles(); 
       }
     }
   }, [currentUserId, esAdmin]);
@@ -370,11 +374,15 @@ export default function Participaciones({ usuario }) {
                     onChange={(e) => setFormData({ ...formData, usuario_id: e.target.value })}
                   >
                     <option value="">-- Seleccione un docente activo --</option>
-                    {usuarios.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.nombre_completo || u.nombre || 'Usuario sin nombre'} (ID: #{u.id})
-                      </option>
-                    ))}
+                    {usuarios.map((u) => {
+                      const idUsuario = u.id || u.id_usuario;
+                      const nombreDisplay = u.nombre_completo || u.nombre || u.usuario || 'Usuario sin nombre';
+                      return (
+                        <option key={idUsuario} value={idUsuario}>
+                          {nombreDisplay} (ID: #{idUsuario})
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}
