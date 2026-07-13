@@ -237,14 +237,15 @@ export default function Participaciones({ usuario }) {
   };
 
   const obtenerEstiloEstado = (estado) => {
-    switch (estado) {
-      case 'Activo':
-      case 'Aprobado':
+    const est = estado?.toUpperCase();
+    switch (est) {
+      case 'ACTIVO':
+      case 'APROBADO':
         return 'bg-green-100 text-green-800 border border-green-200';
-      case 'Rechazado':
-      case 'Inactivo':
+      case 'RECHAZADO':
+      case 'INACTIVO':
         return 'bg-red-100 text-red-800 border border-red-200';
-      case 'Pendiente':
+      case 'PENDIENTE':
       default:
         return 'bg-amber-100 text-amber-800 border border-amber-200';
     }
@@ -305,10 +306,11 @@ export default function Participaciones({ usuario }) {
                   <td className="px-4 py-3 max-w-xs font-medium">
                     <div className="truncate text-slate-900">{part.titulo_proyecto || 'Propuesta de Investigación Sin Título'}</div>
                     
-                    {/* VISUALIZACIÓN DE RETROALIMENTACIÓN DE RECHAZO */}
-                    {part.estado_vinculacion === 'Rechazado' && part.motivo_rechazo && (
-                      <div className="text-[11px] text-red-600 font-normal mt-1 bg-red-50 p-2 rounded-lg border border-red-100 max-w-xs">
-                        <span className="font-bold">Motivo:</span> {part.motivo_rechazo}
+                    {/* RETROALIMENTACIÓN DE RECHAZO RESILIENTE A MAYÚSCULAS/MINÚSCULAS */}
+                    {part.estado_vinculacion?.toUpperCase() === 'RECHAZADO' && (
+                      <div className="text-[11px] text-red-700 font-normal mt-1 bg-red-50 p-2 rounded-lg border border-red-200 whitespace-normal break-words">
+                        <span className="font-bold block text-red-800">❌ Motivo del Rechazo:</span>
+                        {part.motivo_rechazo || part.observaciones || 'No se especificaron detalles adicionales.'}
                       </div>
                     )}
                   </td>
@@ -341,7 +343,7 @@ export default function Participaciones({ usuario }) {
                       
                       {esAdmin && (
                         <>
-                          {part.estado_vinculacion === 'Pendiente' ? (
+                          {part.estado_vinculacion?.toUpperCase() === 'PENDIENTE' ? (
                             <>
                               <button
                                 onClick={() => handleAprobarEstado(part.id)}
@@ -516,7 +518,7 @@ export default function Participaciones({ usuario }) {
                 <textarea
                   required
                   rows="4"
-                  placeholder="Ej: El archivo PDF de soporte se encuentra ilegible o no corresponde al formato avalado institucionalmente."
+                  placeholder="Ej: El archivo PDF de soporte se encuentra ilegible o no corresponde al formato avalado..."
                   className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-red-500 outline-none resize-none"
                   value={motivoRechazo}
                   onChange={(e) => setMotivoRechazo(e.target.value)}
@@ -544,7 +546,7 @@ export default function Participaciones({ usuario }) {
             </form>
           </div>
         </div>
-    )}
+      )}
     </div>
   );
 }
