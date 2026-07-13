@@ -23,17 +23,18 @@ export default function Participaciones({ usuario }) {
   const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
   const currentUserId = usuario?.id || usuario?.id_usuario || localStorage.getItem('userId');
 
+  // Carga proyectos respetando el formato json.data del backend
   const cargarProyectosDisponibles = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/proyectos', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          setProyectos(data.data || []);
-        } else if (Array.isArray(data)) {
-          setProyectos(data);
+        const json = await res.json();
+        if (json.data && Array.isArray(json.data)) {
+          setProyectos(json.data);
+        } else if (Array.isArray(json)) {
+          setProyectos(json);
         }
       }
     } catch (err) {
@@ -41,23 +42,19 @@ export default function Participaciones({ usuario }) {
     }
   };
 
+  // Carga usuarios respetando el formato exacto de json.data que usa App.jsx
   const cargarUsuariosDisponibles = async () => {
     try {
       const res = await fetch('http://localhost:5000/api/usuarios', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        const data = await res.json();
-        console.log('Estructura detectada en /api/usuarios:', data); 
+        const json = await res.json();
         
-        if (Array.isArray(data)) {
-          setUsuarios(data);
-        } else if (data.success && Array.isArray(data.data)) {
-          setUsuarios(data.data);
-        } else if (Array.isArray(data.usuarios)) {
-          setUsuarios(data.usuarios);
-        } else if (data.data && Array.isArray(data.data.usuarios)) {
-          setUsuarios(data.data.usuarios);
+        if (json.data && Array.isArray(json.data)) {
+          setUsuarios(json.data);
+        } else if (Array.isArray(json)) {
+          setUsuarios(json);
         }
       }
     } catch (err) {
@@ -65,6 +62,7 @@ export default function Participaciones({ usuario }) {
     }
   };
 
+  // Carga las participaciones registradas
   const cargarParticipaciones = async () => {
     try {
       setLoading(true);
@@ -87,12 +85,15 @@ export default function Participaciones({ usuario }) {
         return;
       }
       
-      const data = await res.json();
-      if (data.success) {
-        setParticipaciones(data.data || []);
+      const json = await res.json();
+      if (json.data && Array.isArray(json.data)) {
+        setParticipaciones(json.data);
+      } else if (Array.isArray(json)) {
+        setParticipaciones(json);
+      } else if (json.success && Array.isArray(json.data)) {
+        setParticipaciones(json.data);
       } else {
         setParticipaciones([]);
-        setError(data.error || 'No se pudieron consultar las participaciones.');
       }
     } catch (err) {
       console.error('Error al conectar con backend:', err);
@@ -144,7 +145,7 @@ export default function Participaciones({ usuario }) {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok) {
         alert(data.message || 'Registro eliminado con éxito.');
         cargarParticipaciones();
       } else {
@@ -180,8 +181,8 @@ export default function Participaciones({ usuario }) {
       });
       
       const data = await res.json();
-      if (res.ok && data.success) {
-        alert(data.message);
+      if (res.ok) {
+        alert(data.message || 'Operación realizada con éxito');
         setModalAbierto(false);
         setArchivo(null);
         setFormData({ 
@@ -270,7 +271,7 @@ export default function Participaciones({ usuario }) {
                   <td className="px-4 py-3 max-w-xs truncate font-medium">
                     {part.titulo_proyecto || 'Propuesta de Investigación Sin Título'}
                   </td>
-                  {esAdmin && <td className="px-4 py-3 font-medium text-slate-600">{part.nombre_usuario}</td>}
+                  {esAdmin && <td className="px-4 py-3 font-medium text-slate-600">{part.nombre_usuario || 'Docente'}</td>}
                   <td className="px-4 py-3 text-xs">{part.rol_proyecto}</td>
                   <td className="px-4 py-3 text-center font-semibold">{part.horas_dedicacion} hrs</td>
                   <td className="px-4 py-3 text-xs">
