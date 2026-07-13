@@ -19,7 +19,6 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
   
   const esEdicion = !!convocatoriaAEditar;
 
-  // Formateador de fechas de base de datos a formato compatible con <input type="datetime-local">
   const formatearFechaParaInput = (fechaString) => {
     if (!fechaString) return '';
     const d = new Date(fechaString);
@@ -60,12 +59,10 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
 
       let response;
       if (esEdicion) {
-        // Modo Edición: Petición PUT
         response = await axios.put(`http://localhost:5000/api/convocatorias/${convocatoriaAEditar.id}`, formData, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
       } else {
-        // Modo Creación: Petición POST
         response = await axios.post('http://localhost:5000/api/convocatorias', formData, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -113,15 +110,12 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
       </div>
 
       {mensaje.texto && (
-        <div className={`p-4 rounded-xl text-sm mb-5 font-semibold ${
-          mensaje.tipo === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
+        <div className={`p-4 rounded-xl text-sm mb-5 font-semibold ${mensaje.tipo === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
           {mensaje.texto}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Fila 1: Título de la Convocatoria */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Título de la Convocatoria *</label>
           <input
@@ -135,7 +129,6 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
           />
         </div>
 
-        {/* Fila 2: Descripción */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Descripción del Programa *</label>
           <textarea
@@ -149,7 +142,6 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
           />
         </div>
 
-        {/* Fila 3: Código, Tipo y Modalidad */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Código</label>
@@ -158,7 +150,7 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
               name="codigo"
               value={formData.codigo}
               onChange={handleInputChange}
-              disabled={esEdicion} // No dejamos cambiar el código primario en ediciones para mantener consistencia
+              disabled={esEdicion}
               placeholder="Ej: CNV-INV-01"
               className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] text-sm ${esEdicion ? 'bg-slate-200 text-slate-500 border-slate-300' : 'bg-slate-50 border-slate-200'}`}
             />
@@ -191,7 +183,6 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
           </div>
         </div>
 
-        {/* Fila 4: Fechas (Inicio y Cierre) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Fecha de Inicio *</label>
@@ -218,7 +209,6 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
           </div>
         </div>
 
-        {/* Fila 5: Presupuesto Máximo y URL */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Presupuesto Máximo</label>
