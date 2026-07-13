@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 export default function Participaciones({ usuario }) {
   const [participaciones, setParticipaciones] = useState([]);
   const [proyectos, setProyectos] = useState([]); // Estado nuevo para almacenar los proyectos de la BD
+  const [usuarios, setUsuarios] = useState([]); // Estado nuevo para almacenar los usuarios/docentes de la BD
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -30,7 +31,6 @@ export default function Participaciones({ usuario }) {
       });
       if (res.ok) {
         const data = await res.json();
-        // Se adapta tanto si el backend responde con data.data o directamente con el arreglo
         if (data.success) {
           setProyectos(data.data || []);
         } else if (Array.isArray(data)) {
@@ -39,6 +39,25 @@ export default function Participaciones({ usuario }) {
       }
     } catch (err) {
       console.error('Error al mapear proyectos en el select:', err);
+    }
+  };
+
+  // Función para cargar los usuarios reales existentes en la base de datos (Exclusivo Admin)
+  const cargarUsuariosDisponibles = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/usuarios', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setUsuarios(data.data || []);
+        } else if (Array.isArray(data)) {
+          setUsuarios(data);
+        }
+      }
+    } catch (err) {
+      console.error('Error al mapear usuarios en el select:', err);
     }
   };
 
@@ -82,7 +101,10 @@ export default function Participaciones({ usuario }) {
   useEffect(() => {
     if (currentUserId || esAdmin) {
       cargarParticipaciones();
-      cargarProyectosDisponibles(); // Carga los proyectos de forma automática al montar el componente
+      cargarProyectosDisponibles(); 
+      if (esAdmin) {
+        cargarUsuariosDisponibles(); // Carga los usuarios si el usuario es Admin
+      }
     }
   }, [currentUserId, esAdmin]);
 
@@ -319,7 +341,7 @@ export default function Participaciones({ usuario }) {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
               
-              {/* CAMPO AUTOMATIZADO CON SELECT DROPDOWN */}
+              {/* SELECCIONAR PROYECTO */}
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Proyecto de Investigación</label>
                 <select
@@ -337,17 +359,23 @@ export default function Participaciones({ usuario }) {
                 </select>
               </div>
 
+              {/* SELECCIONAR DOCENTE AUTOMATIZADO */}
               {esAdmin && (
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Docente / Usuario</label>
-                  <input
-                    type="number"
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Docente / Usuario</label>
+                  <select
                     required
-                    placeholder="Ej: 4"
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                     value={formData.usuario_id}
                     onChange={(e) => setFormData({ ...formData, usuario_id: e.target.value })}
-                  />
+                  >
+                    <option value="">-- Seleccione un docente activo --</option>
+                    {usuarios.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.nombre_completo || u.nombre || 'Usuario sin nombre'} (ID: #{u.id})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
