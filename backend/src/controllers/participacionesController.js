@@ -11,8 +11,10 @@ exports.getParticipaciones = async (req, res) => {
     const usuarioId = usuarioLogueado.id || usuarioLogueado.usuarioId || usuarioLogueado.id_usuario;
     const rol = usuarioLogueado.rol;
 
+    // Se agrega 'part.motivo AS motivo_rechazo' como estrategia defensiva por si el frontend mapea ese nombre exacto
     let query = `
       SELECT part.*, 
+             part.motivo AS motivo_rechazo,
              part.archivo_url AS soporte_url,
              p.codigo AS codigo_proyecto, 
              p.titulo AS titulo_proyecto,
@@ -83,24 +85,28 @@ exports.crearVinculacion = async (req, res) => {
     });
   } catch (err) {
     console.error('❌ Error en crearVinculacion:', err);
-    res.status(500).json({ error: 'Error de consistencia al guardar la vinculación.' });
+    res.status(500).json({ error: 'Error de專istencia al guardar la vinculación.' });
   }
 };
 
-// 3. Modificar el estado de una vinculación (Soporta 'Aprobado', 'Rechazado', 'Activo', 'Inactivo')
+// 3. Modificar el estado de una vinculación (Soporta guardar el motivo del rechazo)
 exports.actualizarEstado = async (req, res) => {
   try {
     const { id } = req.params;
-    const { estado_vinculacion } = req.body;
+    // Capturamos tanto 'motivo' como 'motivo_rechazo' por si el frontend lo envía con cualquiera de los dos nombres
+    const { estado_vinculacion, motivo, motivo_rechazo } = req.body;
 
     if (!estado_vinculacion) {
       return res.status(400).json({ error: 'El nuevo estado no fue especificado.' });
     }
 
-    const query = `UPDATE participaciones SET estado_vinculacion = ? WHERE id = ?`;
-    await db.query(query, [estado_vinculacion, id]);
+    const textoMotivo = motivo || motivo_rechazo || null;
 
-    res.json({ success: true, message: `El estado se actualizó a de forma exitosa.` });
+    // Actualizamos tanto el estado como la columna motivo en la base de datos
+    const query = `UPDATE participaciones SET estado_vinculacion = ?, motivo = ? WHERE id = ?`;
+    await db.query(query, [estado_vinculacion, textoMotivo, id]);
+
+    res.json({ success: true, message: `El estado se actualizó de forma exitosa.` });
   } catch (err) {
     console.error('❌ Error en actualizarEstado:', err);
     res.status(500).json({ error: 'Error al cambiar el estado del registro en el servidor.' });
