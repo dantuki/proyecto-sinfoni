@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 export default function Participaciones({ usuario }) {
   const [participaciones, setParticipaciones] = useState([]);
+  const [proyectos, setProyectos] = useState([]); // Estado nuevo para almacenar los proyectos de la BD
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -20,6 +21,26 @@ export default function Participaciones({ usuario }) {
   const esAdmin = usuario?.rol === 'Admin' || usuario?.rol === 'Administrador';
   const nombreUsuario = usuario?.nombre_completo || usuario?.nombre || 'Docente';
   const currentUserId = usuario?.id || usuario?.id_usuario || localStorage.getItem('userId');
+
+  // Función para cargar los proyectos reales existentes en la base de datos
+  const cargarProyectosDisponibles = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/proyectos', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Se adapta tanto si el backend responde con data.data o directamente con el arreglo
+        if (data.success) {
+          setProyectos(data.data || []);
+        } else if (Array.isArray(data)) {
+          setProyectos(data);
+        }
+      }
+    } catch (err) {
+      console.error('Error al mapear proyectos en el select:', err);
+    }
+  };
 
   const cargarParticipaciones = async () => {
     try {
@@ -61,6 +82,7 @@ export default function Participaciones({ usuario }) {
   useEffect(() => {
     if (currentUserId || esAdmin) {
       cargarParticipaciones();
+      cargarProyectosDisponibles(); // Carga los proyectos de forma automática al montar el componente
     }
   }, [currentUserId, esAdmin]);
 
@@ -296,16 +318,23 @@ export default function Participaciones({ usuario }) {
               {esAdmin ? 'Nueva Vinculación Manual (Admin)' : 'Formulario de Postulación de Propuesta'}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4 text-left">
+              
+              {/* CAMPO AUTOMATIZADO CON SELECT DROPDOWN */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">ID del Proyecto</label>
-                <input
-                  type="number"
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Seleccionar Proyecto de Investigación</label>
+                <select
                   required
-                  placeholder="Ej: 1"
-                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
                   value={formData.proyecto_id}
                   onChange={(e) => setFormData({ ...formData, proyecto_id: e.target.value })}
-                />
+                >
+                  <option value="">-- Seleccione un proyecto activo --</option>
+                  {proyectos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.titulo || 'Proyecto sin título'} (ID: #{p.id})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {esAdmin && (
