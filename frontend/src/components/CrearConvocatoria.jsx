@@ -14,6 +14,7 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
     bases_url: ''
   });
 
+  const [archivoBases, setArchivoBases] = useState(null);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [cargando, setCargando] = useState(false);
   
@@ -57,14 +58,39 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
     try {
       const token = localStorage.getItem('token'); 
 
+      // Construcción del FormData para empaquetar variables y el archivo físico
+      const data = new FormData();
+      data.append('titulo', formData.titulo);
+      data.append('descripcion', formData.descripcion);
+      data.append('tipo', formData.tipo);
+      data.append('fecha_inicio', formData.fecha_inicio);
+      data.append('fecha_cierre', formData.fecha_cierre);
+      data.append('presupuesto_max', formData.presupuesto_max);
+      data.append('modalidad', formData.modalidad);
+      
+      if (esEdicion) {
+        data.append('codigo', formData.codigo);
+        data.append('bases_url', formData.bases_url); // Envía la ruta actual por si no se sube un archivo nuevo
+      }
+
+      if (archivoBases) {
+        data.append('archivo_bases', archivoBases);
+      }
+
       let response;
       if (esEdicion) {
-        response = await axios.put(`http://localhost:5000/api/convocatorias/${convocatoriaAEditar.id}`, formData, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        response = await axios.put(`http://localhost:5000/api/convocatorias/${convocatoriaAEditar.id}`, data, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
         });
       } else {
-        response = await axios.post('http://localhost:5000/api/convocatorias', formData, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        response = await axios.post('http://localhost:5000/api/convocatorias', data, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
         });
       }
 
@@ -147,12 +173,9 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Código</label>
             <input
               type="text"
-              name="codigo"
-              value={formData.codigo}
-              onChange={handleInputChange}
-              disabled={esEdicion}
-              placeholder="Ej: CNV-INV-01"
-              className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] text-sm ${esEdicion ? 'bg-slate-200 text-slate-500 border-slate-300' : 'bg-slate-50 border-slate-200'}`}
+              value={esEdicion ? formData.codigo : "AUTOMÁTICO"}
+              disabled
+              className="w-full px-4 py-2.5 border rounded-xl text-sm bg-slate-200 text-slate-400 border-slate-300 font-bold text-center select-none"
             />
           </div>
 
@@ -223,15 +246,19 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">URL de Bases / Términos (PDF)</label>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Cargar Archivo de Bases (PDF) *</label>
             <input
-              type="text"
-              name="bases_url"
-              value={formData.bases_url}
-              onChange={handleInputChange}
-              placeholder="Ej: https://miuniversidad.edu.co/terminos.pdf"
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] text-sm"
+              type="file"
+              accept=".pdf"
+              onChange={(e) => setArchivoBases(e.target.files[0])}
+              required={!esEdicion}
+              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300"
             />
+            {esEdicion && formData.bases_url && (
+              <p className="text-xs text-blue-600 mt-1 truncate">
+                📄 <a href={formData.bases_url} target="_blank" rel="noreferrer" className="underline hover:text-blue-800 font-semibold">Ver PDF cargado actualmente</a>
+              </p>
+            )}
           </div>
         </div>
 
