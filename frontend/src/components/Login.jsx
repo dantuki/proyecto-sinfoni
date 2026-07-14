@@ -140,7 +140,7 @@ export default function AuthContainer({ alAutenticar }) {
               <h2 className="text-sm font-bold text-slate-800 leading-none tracking-tight">
                 ARCHIVE<span className="text-emerald-500 font-extrabold">X</span>
               </h2>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mt-0.5">SaaS Enterprise</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mt-0.5">Gestion de Archivos</span>
             </div>
           </div>
 
@@ -158,7 +158,7 @@ export default function AuthContainer({ alAutenticar }) {
           {isLogin ? (
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-1.5">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Autenticación</h1>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Inicia Seccion</h1>
                 <p className="text-xs text-slate-500 leading-relaxed">
                   Introduce tus credenciales institucionales para ingresar a la plataforma corporativa.
                 </p>
