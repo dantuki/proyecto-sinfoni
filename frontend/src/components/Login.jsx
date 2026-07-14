@@ -167,7 +167,7 @@ export default function AuthContainer({ alAutenticar }) {
               <form className="space-y-4" onSubmit={handleLoginSubmit}>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                    Correo Corporativo
+                    Correo
                   </label>
                   <input
                     type="email"
