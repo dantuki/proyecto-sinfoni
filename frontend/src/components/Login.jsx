@@ -160,7 +160,7 @@ export default function AuthContainer({ alAutenticar }) {
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Inicia Seccion</h1>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Introduce tus credenciales institucionales para ingresar a la plataforma corporativa.
+                  Introduce tus Correo y Contraseña con la que iniciaste seccion 
                 </p>
               </div>
 
