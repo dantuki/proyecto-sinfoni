@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api';
 
@@ -6,6 +7,7 @@ function Convocatorias({ usuario, convocatoria }) {
   const [sedes, setSedes] = useState([]);
   const [cargandoSedes, setCargandoSedes] = useState(true);
   const [errorSedes, setErrorSedes] = useState(null);
+  const [enviando, setEnviando] = useState(false);
 
   const [formData, setFormData] = useState({
     codigoPropuesta: '', 
@@ -70,7 +72,7 @@ function Convocatorias({ usuario, convocatoria }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!convocatoria) {
@@ -78,18 +80,45 @@ function Convocatorias({ usuario, convocatoria }) {
       return;
     }
 
-    const idUsuarioRemitente = usuario?.id || localStorage.getItem('userId');
+    setEnviando(true);
+    const token = localStorage.getItem('token');
+    
+    const payload = new FormData();
+    payload.append('codigoPropuesta', formData.codigoPropuesta);
+    payload.append('titulo_propuesta', formData.titulo_propuesta);
+    payload.append('sede', formData.sede);
+    payload.append('convocatoriaId', convocatoria.id);
+    payload.append('observaciones', formData.observaciones);
+    payload.append('presupuesto', archivos.presupuesto);
+    payload.append('cronograma', archivos.cronograma);
+    payload.append('honestidad', archivos.honestidad);
+    payload.append('id', archivos.id);
 
-    console.log("--- Payload Autoprotegido ---");
-    console.log("ID del Investigador:", idUsuarioRemitente);
-    console.log("ID de la Convocatoria Asociada:", convocatoria.id);
-    console.log("Datos del Formulario:", formData);
-    console.log("Archivos Adjuntos:", archivos);
+    try {
+      const response = await axios.post(`${API_BASE}/postulaciones/radicar`, payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-    const sedeSeleccionada = sedes.find(s => s.id === parseInt(formData.sede));
-    const nombreSede = sedeSeleccionada ? sedeSeleccionada.nombre_sede : 'Sede Desconocida';
-
-    alert(`¡Solicitud radicada con éxito!\n\nCódigo: ${formData.codigoPropuesta}\nPropuesta: "${formData.titulo_propuesta}"\nSede: ${nombreSede}\nAsociada a Convocatoria: ${convocatoria.titulo} (ID: ${convocatoria.id})`);
+      if (response.data.status === 'success') {
+        alert(`¡Propuesta Radicada con Éxito!\nCódigo asignado: ${formData.codigoPropuesta}`);
+        setFormData({
+          codigoPropuesta: generarCodigoPropuesta(),
+          titulo_propuesta: '',
+          sede: '',
+          observaciones: ''
+        });
+        setArchivos({ presupuesto: null, cronograma: null, honestidad: null, id: null });
+        e.target.reset();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Ocurrió un error al intentar radicar la postulación.');
+    } finally {
+      setEnviando(false);
+    }
   };
 
   if (!convocatoria) {
@@ -106,7 +135,6 @@ function Convocatorias({ usuario, convocatoria }) {
 
   return (
     <div className="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-3xl w-full text-slate-800 border border-slate-100 mt-2">
-      {/* Banner de la Convocatoria Seleccionada */}
       <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div className="text-left">
           <span className="text-[10px] uppercase font-extrabold text-blue-500 tracking-wider">Postulándote a:</span>
@@ -230,9 +258,10 @@ function Convocatorias({ usuario, convocatoria }) {
 
         <button
           type="submit"
-          className="w-full py-3 bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-bold rounded-xl shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider text-sm mt-2"
+          disabled={enviando}
+          className="w-full py-3 bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-bold rounded-xl shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider text-sm mt-2 disabled:opacity-50"
         >
-          Enviar Propuesta de Investigación
+          {enviando ? 'Subiendo Documentos...' : 'Enviar Propuesta de Investigación'}
         </button>
       </form>
     </div>
