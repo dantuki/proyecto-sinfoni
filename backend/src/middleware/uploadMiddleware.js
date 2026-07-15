@@ -12,7 +12,6 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Permite PDFs e Imágenes para los soportes de la convocatoria
   if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
@@ -23,7 +22,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({ 
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 } // Elevado a 10MB por seguridad
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 module.exports = upload;
