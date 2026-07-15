@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api';
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 function Convocatorias({ usuario, convocatoria }) {
   const [sedes, setSedes] = useState([]);
@@ -69,9 +70,22 @@ function Convocatorias({ usuario, convocatoria }) {
   };
 
   const handleFileChange = (e, tipo) => {
-    if (e.target.files && e.target.files[0]) {
-      setArchivos(prev => ({ ...prev, [tipo]: e.target.files[0] }));
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+
+    if (archivo.type !== 'application/pdf') {
+      alert('Error: Solo se admiten archivos en formato PDF.');
+      e.target.value = '';
+      return;
     }
+
+    if (archivo.size > MAX_FILE_SIZE) {
+      alert('Error: El archivo no puede superar los 10MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setArchivos(prev => ({ ...prev, [tipo]: archivo }));
   };
 
   const handleSubmit = async (e) => {
@@ -79,6 +93,11 @@ function Convocatorias({ usuario, convocatoria }) {
 
     if (!convocatoria) {
       alert("Error: Debes seleccionar una convocatoria activa primero.");
+      return;
+    }
+
+    if (!archivos.presupuesto || !archivos.cronograma || !archivos.honestidad || !archivos.id) {
+      alert("Error: Por favor, sube todos los documentos obligatorios.");
       return;
     }
 
@@ -137,7 +156,6 @@ function Convocatorias({ usuario, convocatoria }) {
 
   return (
     <div className="bg-white rounded-3xl shadow-xl max-w-3xl w-full text-slate-800 border border-slate-100/80 mt-2 p-8 transition-all duration-300">
-      {/* Encabezado contextual de la convocatoria */}
       <div className="bg-blue-50/50 border border-blue-100/60 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="text-left">
           <span className="text-[10px] uppercase font-extrabold text-[#5B9BD5] tracking-wider block">Postulándote a la convocatoria:</span>
@@ -158,7 +176,6 @@ function Convocatorias({ usuario, convocatoria }) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Input de Código */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Código Único de Propuesta (Automático)
@@ -173,7 +190,6 @@ function Convocatorias({ usuario, convocatoria }) {
             />
           </div>
 
-          {/* Selector de Sedes */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Sede de Vinculación *
@@ -204,7 +220,6 @@ function Convocatorias({ usuario, convocatoria }) {
           </div>
         </div>
 
-        {/* Input de Título */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
             Título de la Propuesta *
@@ -220,7 +235,6 @@ function Convocatorias({ usuario, convocatoria }) {
           />
         </div>
 
-        {/* Observaciones */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
             Observaciones Iniciales
@@ -235,7 +249,6 @@ function Convocatorias({ usuario, convocatoria }) {
           />
         </div>
 
-        {/* Documentación Obligatoria */}
         <div className="bg-slate-50/70 p-6 rounded-2xl border border-slate-100">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 border-b border-slate-200 pb-2">
             Documentación Obligatoria (Formatos PDF)
@@ -288,7 +301,6 @@ function Convocatorias({ usuario, convocatoria }) {
           </div>
         </div>
 
-        {/* Botón de Envío */}
         <button
           type="submit"
           disabled={enviando}
