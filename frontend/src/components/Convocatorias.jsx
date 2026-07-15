@@ -40,19 +40,21 @@ function Convocatorias({ usuario, convocatoria }) {
 
     const obtenerSedesAPI = async () => {
       try {
-        const respuesta = await fetch(`${API_BASE}/sedes`);
-        if (!respuesta.ok) {
-          throw new Error('No se pudo conectar con el servidor de sedes.');
-        }
-        const dataJSON = await respuesta.json();
-        if (dataJSON.status === 'success') {
-          setSedes(dataJSON.data);
+        const token = localStorage.getItem('token');
+        const respuesta = await axios.get(`${API_BASE}/sedes`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (respuesta.data.status === 'success') {
+          setSedes(respuesta.data.data);
         } else {
-          throw new Error(dataJSON.message || 'Error en la respuesta.');
+          throw new Error(respuesta.data.message || 'Error al procesar el listado de sedes.');
         }
       } catch (err) {
         console.error("Error al cargar sedes:", err);
-        setErrorSedes(err.message);
+        setErrorSedes(err.response?.data?.message || err.message);
       } finally {
         setCargandoSedes(false);
       }
@@ -123,40 +125,42 @@ function Convocatorias({ usuario, convocatoria }) {
 
   if (!convocatoria) {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-md text-center max-w-md mx-auto mt-10 border border-slate-200">
-        <span className="text-4xl">⚠️</span>
-        <h3 className="text-lg font-bold text-slate-700 mt-4">Acceso al Formulario</h3>
-        <p className="text-slate-500 text-sm mt-2">
-          Por favor, ve al módulo de convocatorias y haz clic en <strong>"Postularse 🚀"</strong> en la convocatoria de tu interés.
+      <div className="bg-white p-8 rounded-3xl shadow-lg text-center max-w-md mx-auto mt-10 border border-slate-100">
+        <span className="text-5xl">⚠️</span>
+        <h3 className="text-xl font-bold text-slate-800 mt-4">Acceso al Formulario</h3>
+        <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+          Por favor, navega al módulo de convocatorias y haz clic en el botón <strong className="text-[#5B9BD5]">"Postularse 🚀"</strong> de la convocatoria de tu interés.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-3xl w-full text-slate-800 border border-slate-100 mt-2">
-      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <div className="bg-white rounded-3xl shadow-xl max-w-3xl w-full text-slate-800 border border-slate-100/80 mt-2 p-8 transition-all duration-300">
+      {/* Encabezado contextual de la convocatoria */}
+      <div className="bg-blue-50/50 border border-blue-100/60 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="text-left">
-          <span className="text-[10px] uppercase font-extrabold text-blue-500 tracking-wider">Postulándote a:</span>
-          <h4 className="text-base font-bold text-slate-800">{convocatoria.titulo}</h4>
-          <p className="text-xs text-slate-500 mt-0.5">Código Convocatoria: {convocatoria.codigo}</p>
+          <span className="text-[10px] uppercase font-extrabold text-[#5B9BD5] tracking-wider block">Postulándote a la convocatoria:</span>
+          <h4 className="text-lg font-bold text-slate-800 mt-0.5">{convocatoria.titulo}</h4>
+          <p className="text-xs text-slate-500 mt-0.5">ID Identificador: <span className="font-mono font-bold text-slate-700">{convocatoria.codigo}</span></p>
         </div>
-        <div className="bg-white px-3 py-1.5 rounded-lg border border-blue-100 text-xs font-semibold text-slate-600 self-stretch sm:self-auto text-center">
-          💰 Tope: {convocatoria.presupuesto_max || 'Estándar'}
+        <div className="bg-white px-4 py-2 rounded-xl border border-blue-100 shadow-sm text-xs font-bold text-slate-700 self-stretch sm:self-auto text-center whitespace-nowrap">
+          💰 Tope Máx: {convocatoria.presupuesto_max || 'Estándar'}
         </div>
       </div>
 
-      <div className="border-b border-slate-200 pb-4 mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Radicación de Propuesta</h2>
+      <div className="border-b border-slate-100 pb-5 mb-6">
+        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Radicación de Propuesta</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Suba la documentación reglamentaria requerida. El sistema enlazará automáticamente su perfil académico.
+          Sube la documentación reglamentaria requerida en formato PDF. SINFONI enlazará automáticamente tu perfil académico.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Input de Código */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Código Único de Propuesta (Automático)
             </label>
             <input 
@@ -164,20 +168,21 @@ function Convocatorias({ usuario, convocatoria }) {
               name="codigoPropuesta"
               value={formData.codigoPropuesta}
               readOnly
-              className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl focus:outline-none text-slate-700 font-semibold text-sm cursor-not-allowed select-none"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none text-slate-700 font-mono font-bold text-sm cursor-not-allowed select-none"
               required
             />
           </div>
 
+          {/* Selector de Sedes */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Sede de Vinculación *
             </label>
             <select
               name="sede"
               value={formData.sede}
               onChange={handleInputChange}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] transition-all text-sm"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/20 focus:border-[#5B9BD5] transition-all text-sm text-slate-700 font-medium"
               required
               disabled={cargandoSedes}
             >
@@ -199,8 +204,9 @@ function Convocatorias({ usuario, convocatoria }) {
           </div>
         </div>
 
+        {/* Input de Título */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
             Título de la Propuesta *
           </label>
           <input 
@@ -209,13 +215,14 @@ function Convocatorias({ usuario, convocatoria }) {
             value={formData.titulo_propuesta}
             onChange={handleInputChange}
             placeholder="Escriba el título definitivo de su propuesta de investigación"
-            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] transition-all text-sm"
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/20 focus:border-[#5B9BD5] transition-all text-sm text-slate-700 placeholder:text-slate-400 font-medium"
             required
           />
         </div>
 
+        {/* Observaciones */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
             Observaciones Iniciales
           </label>
           <textarea
@@ -224,42 +231,68 @@ function Convocatorias({ usuario, convocatoria }) {
             placeholder="Comentarios o aclaraciones breves para los evaluadores..."
             value={formData.observaciones}
             onChange={handleInputChange}
-            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] transition-all text-sm resize-none"
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/20 focus:border-[#5B9BD5] transition-all text-sm text-slate-700 placeholder:text-slate-400 resize-none font-medium"
           />
         </div>
 
-        <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 border-b border-slate-200 pb-1">
+        {/* Documentación Obligatoria */}
+        <div className="bg-slate-50/70 p-6 rounded-2xl border border-slate-100">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 border-b border-slate-200 pb-2">
             Documentación Obligatoria (Formatos PDF)
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <span className="font-semibold text-slate-700 block mb-1">1. Presupuesto General *</span>
-              <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'presupuesto')} className="w-full text-slate-500" required />
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <span className="font-bold text-slate-700 block mb-2">1. Presupuesto General *</span>
+              <input 
+                type="file" 
+                accept=".pdf" 
+                onChange={(e) => handleFileChange(e, 'presupuesto')} 
+                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
+                required 
+              />
             </div>
 
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <span className="font-semibold text-slate-700 block mb-1">2. Cronograma de Actividades *</span>
-              <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'cronograma')} className="w-full text-slate-500" required />
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <span className="font-bold text-slate-700 block mb-2">2. Cronograma de Actividades *</span>
+              <input 
+                type="file" 
+                accept=".pdf" 
+                onChange={(e) => handleFileChange(e, 'cronograma')} 
+                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
+                required 
+              />
             </div>
 
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <span className="font-semibold text-slate-700 block mb-1">3. Declaración de Honestidad *</span>
-              <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'honestidad')} className="w-full text-slate-500" required />
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <span className="font-bold text-slate-700 block mb-2">3. Declaración de Honestidad *</span>
+              <input 
+                type="file" 
+                accept=".pdf" 
+                onChange={(e) => handleFileChange(e, 'honestidad')} 
+                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
+                required 
+              />
             </div>
 
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <span className="font-semibold text-slate-700 block mb-1">4. Soporte Documento Identidad *</span>
-              <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'id')} className="w-full text-slate-500" required />
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <span className="font-bold text-slate-700 block mb-2">4. Soporte Documento Identidad *</span>
+              <input 
+                type="file" 
+                accept=".pdf" 
+                onChange={(e) => handleFileChange(e, 'id')} 
+                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
+                required 
+              />
             </div>
           </div>
         </div>
 
+        {/* Botón de Envío */}
         <button
           type="submit"
           disabled={enviando}
-          className="w-full py-3 bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-bold rounded-xl shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider text-sm mt-2 disabled:opacity-50"
+          className="w-full py-3.5 bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-extrabold rounded-2xl shadow-md hover:opacity-95 transition-opacity uppercase tracking-wider text-xs mt-2 disabled:opacity-50"
         >
           {enviando ? 'Subiendo Documentos...' : 'Enviar Propuesta de Investigación'}
         </button>
