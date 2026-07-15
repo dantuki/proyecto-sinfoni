@@ -7,12 +7,13 @@ import Convocatorias from "./components/Convocatorias";
 import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 import CrearConvocatoria from "./components/CrearConvocatoria";
 import MisSolicitudes from "./components/MisSolicitudes";
+import RevisarSolicitudes from "./components/RevisarSolicitudes";
 
 const ControlUsuarios = () => {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-4xl mx-auto">
       <h2 className="text-xl font-bold text-slate-800 mb-4">Control de Usuarios</h2>
-      <p className="text-slate-500">Módulo administrativo para la gestión de roles, accesos y usuarios del sistema.</p>
+      <p className="text-slate-500">Módulo administrativo para la gestión de roles, accesos y usuarios del sistema SINFONI.</p>
     </div>
   );
 };
@@ -67,6 +68,8 @@ function App() {
             alRedireccionarConvocatorias={() => setVistaActual('convocatorias_abiertas')} 
           />
         );
+      case 'revisar_solicitudes':
+        return <RevisarSolicitudes usuario={usuario} />;
       case 'control_usuarios': 
         return <ControlUsuarios />;
       default: 
@@ -116,8 +119,16 @@ function App() {
             </button>
           )}
 
+          {/* Opciones exclusivas del Administrador */}
           {usuario.rol === 'Admin' && (
             <>
+              <button 
+                onClick={() => cambiarVistaLimpia('revisar_solicitudes')} 
+                className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
+              >
+                <span>📥</span> Revisar Solicitudes
+              </button>
+
               <button 
                 onClick={() => cambiarVistaLimpia('crear_convocatoria')} 
                 className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"

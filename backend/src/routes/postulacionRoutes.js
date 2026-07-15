@@ -41,7 +41,12 @@ const cpUpload = upload.fields([
   { name: 'id', maxCount: 1 }
 ]);
 
+// Rutas de uso para Docentes (Radicación e Historial)
 router.post('/radicar', verificarToken, cpUpload, postulacionController.createPostulacion);
 router.get('/mis-solicitudes', verificarToken, postulacionController.getPostulacionesByUser);
+
+// Rutas Administrativas de SINFONI (Fase 4: Consola de Administración)
+router.get('/', verificarToken, postulacionController.getPostulacionesAdmin);
+router.put('/:id/estado', verificarToken, postulacionController.updateEstadoPostulacion);
 
 module.exports = router;

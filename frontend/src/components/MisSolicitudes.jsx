@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from 'react';
 
 const MisSolicitudes = ({ usuario, alRedireccionarConvocatorias }) => {
   const [solicitudes, setSolicitudes] = useState([]);
@@ -16,8 +16,10 @@ const MisSolicitudes = ({ usuario, alRedireccionarConvocatorias }) => {
             Authorization: `Bearer ${token}`
           }
         });
-        // Soportamos que devuelva directamente el array o un objeto estructurado
-        setSolicitudes(response.data.solicitudes || response.data || []);
+        
+        // CORRECCIÓN: Extrae la data interna o respalda con array vacío si no es un array
+        const datosReales = response.data?.data || response.data?.solicitudes || response.data;
+        setSolicitudes(Array.isArray(datosReales) ? datosReales : []);
         setCargando(false);
       } catch (err) {
         console.error('Error al cargar las solicitudes:', err);
@@ -48,7 +50,6 @@ const MisSolicitudes = ({ usuario, alRedireccionarConvocatorias }) => {
   const handleDescargar = (rutaPdf) => {
     if (!rutaPdf) return;
     const baseUrl = 'http://localhost:5000';
-    // Corrección para rutas en Windows que traigan backslashes
     const cleanedPath = rutaPdf.replace(/\\/g, '/');
     const urlCompleta = cleanedPath.startsWith('http') ? cleanedPath : `${baseUrl}/${cleanedPath}`;
     window.open(urlCompleta, '_blank');
@@ -59,7 +60,7 @@ const MisSolicitudes = ({ usuario, alRedireccionarConvocatorias }) => {
     if (estadoNormalizado.includes('radicad')) {
       return 'bg-blue-50 text-blue-700 border-blue-200';
     }
-    if (estadoNormalizado.includes('revis') || estadoNormalizado.includes('proces')) {
+    if (estadoNormalizado.includes('revis') || estadoNormalizado.includes('proces') || estadoNormalizado.includes('evaluacion')) {
       return 'bg-amber-50 text-amber-700 border-amber-200';
     }
     if (estadoNormalizado.includes('aprob') || estadoNormalizado.includes('acept')) {
@@ -252,15 +253,32 @@ const MisSolicitudes = ({ usuario, alRedireccionarConvocatorias }) => {
                 </div>
               </div>
 
-              {/* Alerta si la postulación ha sido rechazada */}
-              {solicitudSeleccionada.estado?.toLowerCase().includes('rechaz') && (
-                <div className="mt-6 p-4 bg-rose-50 border-l-4 border-rose-500 rounded-r-xl">
+              {/* MEJORA: Historial y retroalimentación para estados finales (Aprobado/Aceptado y Rechazado) */}
+              {(solicitudSeleccionada.estado?.toLowerCase().includes('rechaz') || solicitudSeleccionada.estado?.toLowerCase().includes('aprob') || solicitudSeleccionada.estado?.toLowerCase().includes('acept')) && (
+                <div className={`mt-6 p-4 border-l-4 rounded-r-xl ${
+                  solicitudSeleccionada.estado?.toLowerCase().includes('rechaz') 
+                    ? 'bg-rose-50 border-rose-500 text-rose-800' 
+                    : 'bg-emerald-50 border-emerald-500 text-emerald-800'
+                }`}>
                   <div className="flex">
-                    <span className="text-xl mr-3">⚠️</span>
+                    <span className="text-xl mr-3">
+                      {solicitudSeleccionada.estado?.toLowerCase().includes('rechaz') ? '❌' : '🎉'}
+                    </span>
                     <div>
-                      <h4 className="text-sm font-bold text-rose-800">Propuesta Rechazada por el Administrador</h4>
-                      <p className="mt-1 text-sm text-rose-700 leading-relaxed font-medium">
-                        {solicitudSeleccionada.motivo_decision || solicitudSeleccionada.observaciones || 'No se detallaron observaciones del rechazo. Por favor, comunícate con el área administrativa.'}
+                      <h4 className="text-sm font-bold">
+                        {solicitudSeleccionada.estado?.toLowerCase().includes('rechaz') 
+                          ? 'Propuesta Rechazada por el Administrador' 
+                          : '¡Propuesta Aprobada con Éxito!'}
+                      </h4>
+                      <p className={`mt-1 text-sm leading-relaxed font-semibold ${
+                        solicitudSeleccionada.estado?.toLowerCase().includes('rechaz') ? 'text-rose-700' : 'text-emerald-700'
+                      }`}>
+                        Retroalimentación oficial:
+                      </p>
+                      <p className={`mt-1 text-sm leading-relaxed ${
+                        solicitudSeleccionada.estado?.toLowerCase().includes('rechaz') ? 'text-rose-600' : 'text-emerald-600'
+                      }`}>
+                        {solicitudSeleccionada.motivo_decision || solicitudSeleccionada.observaciones || 'No se detallaron observaciones en el sistema.'}
                       </p>
                     </div>
                   </div>
