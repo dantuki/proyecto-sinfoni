@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 
-// Ajusta esta URL si tu backend corre en otro puerto (ej. 4000, 3000)
 const API_BASE = 'http://localhost:5000/api';
 
-function Convocatorias({ usuario }) {
+function Convocatorias({ usuario, convocatoria }) {
   const [sedes, setSedes] = useState([]);
   const [cargandoSedes, setCargandoSedes] = useState(true);
   const [errorSedes, setErrorSedes] = useState(null);
@@ -11,7 +10,7 @@ function Convocatorias({ usuario }) {
   const [formData, setFormData] = useState({
     codigoPropuesta: '', 
     titulo_propuesta: '',
-    sede: '', // Guardará el ID numérico de la sede seleccionada
+    sede: '', 
     observaciones: ''
   });
 
@@ -22,7 +21,6 @@ function Convocatorias({ usuario }) {
     id: null 
   });
 
-  // Generador automático de códigos de propuesta
   const generarCodigoPropuesta = () => {
     const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let aleatorio = '';
@@ -32,7 +30,6 @@ function Convocatorias({ usuario }) {
     return `PROP-2026-${aleatorio}`;
   };
 
-  // Carga inicial del código y de las sedes desde el backend
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -46,11 +43,10 @@ function Convocatorias({ usuario }) {
           throw new Error('No se pudo conectar con el servidor de sedes.');
         }
         const dataJSON = await respuesta.json();
-        
         if (dataJSON.status === 'success') {
           setSedes(dataJSON.data);
         } else {
-          throw new Error(dataJSON.message || 'Error en la respuesta del servidor.');
+          throw new Error(dataJSON.message || 'Error en la respuesta.');
         }
       } catch (err) {
         console.error("Error al cargar sedes:", err);
@@ -77,26 +73,55 @@ function Convocatorias({ usuario }) {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!convocatoria) {
+      alert("Error: Debes seleccionar una convocatoria activa primero.");
+      return;
+    }
+
     const idUsuarioRemitente = usuario?.id || localStorage.getItem('userId');
 
     console.log("--- Payload Autoprotegido ---");
-    console.log("ID del Investigador (Automático):", idUsuarioRemitente);
+    console.log("ID del Investigador:", idUsuarioRemitente);
+    console.log("ID de la Convocatoria Asociada:", convocatoria.id);
     console.log("Datos del Formulario:", formData);
-    console.log("Sede ID Seleccionada (Para Foreign Key):", formData.sede);
-    console.log("Archivos Adjuntos (PDFs):", archivos);
+    console.log("Archivos Adjuntos:", archivos);
 
     const sedeSeleccionada = sedes.find(s => s.id === parseInt(formData.sede));
     const nombreSede = sedeSeleccionada ? sedeSeleccionada.nombre_sede : 'Sede Desconocida';
 
-    alert(`¡Solicitud radicada con éxito!\n\nCódigo asignado: ${formData.codigoPropuesta}\nPropuesta: "${formData.titulo_propuesta}"\nSede: ${nombreSede} (ID: ${formData.sede})\nInvestigador ID: #${idUsuarioRemitente}`);
+    alert(`¡Solicitud radicada con éxito!\n\nCódigo: ${formData.codigoPropuesta}\nPropuesta: "${formData.titulo_propuesta}"\nSede: ${nombreSede}\nAsociada a Convocatoria: ${convocatoria.titulo} (ID: ${convocatoria.id})`);
   };
+
+  if (!convocatoria) {
+    return (
+      <div className="bg-white p-8 rounded-2xl shadow-md text-center max-w-md mx-auto mt-10 border border-slate-200">
+        <span className="text-4xl">⚠️</span>
+        <h3 className="text-lg font-bold text-slate-700 mt-4">Acceso al Formulario</h3>
+        <p className="text-slate-500 text-sm mt-2">
+          Por favor, ve al módulo de convocatorias y haz clic en <strong>"Postularse 🚀"</strong> en la convocatoria de tu interés.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white/95 backdrop-blur-md p-8 rounded-2xl shadow-xl max-w-3xl w-full text-slate-800 border border-slate-100 mt-2">
+      {/* Banner de la Convocatoria Seleccionada */}
+      <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div className="text-left">
+          <span className="text-[10px] uppercase font-extrabold text-blue-500 tracking-wider">Postulándote a:</span>
+          <h4 className="text-base font-bold text-slate-800">{convocatoria.titulo}</h4>
+          <p className="text-xs text-slate-500 mt-0.5">Código Convocatoria: {convocatoria.codigo}</p>
+        </div>
+        <div className="bg-white px-3 py-1.5 rounded-lg border border-blue-100 text-xs font-semibold text-slate-600 self-stretch sm:self-auto text-center">
+          💰 Tope: {convocatoria.presupuesto_max || 'Estándar'}
+        </div>
+      </div>
+
       <div className="border-b border-slate-200 pb-4 mb-6">
-        <h2 className="text-2xl font-bold text-slate-800">Postulación a Convocatoria de Investigación</h2>
+        <h2 className="text-2xl font-bold text-slate-800">Radicación de Propuesta</h2>
         <p className="text-sm text-slate-500 mt-1">
-          Suba los documentos requeridos según los Términos de Referencia. Sus credenciales se indexarán automáticamente.
+          Suba la documentación reglamentaria requerida. El sistema enlazará automáticamente su perfil académico.
         </p>
       </div>
 
@@ -104,7 +129,7 @@ function Convocatorias({ usuario }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Número de Solicitud / Código Propuesta
+              Código Único de Propuesta (Automático)
             </label>
             <input 
               type="text"
@@ -118,7 +143,7 @@ function Convocatorias({ usuario }) {
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Sede de Vinculación
+              Sede de Vinculación *
             </label>
             <select
               name="sede"
@@ -143,11 +168,6 @@ function Convocatorias({ usuario }) {
                 </>
               )}
             </select>
-            {errorSedes && (
-              <span className="text-[10px] text-red-500 mt-1 block">
-                No se pudo conectar al servidor. Verifica que el backend esté corriendo.
-              </span>
-            )}
           </div>
         </div>
 
@@ -173,7 +193,7 @@ function Convocatorias({ usuario }) {
           <textarea
             name="observaciones"
             rows="3"
-            placeholder="Notas adicionales sobre la propuesta..."
+            placeholder="Comentarios o aclaraciones breves para los evaluadores..."
             value={formData.observaciones}
             onChange={handleInputChange}
             className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5] transition-all text-sm resize-none"
@@ -202,7 +222,7 @@ function Convocatorias({ usuario }) {
             </div>
 
             <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <span className="font-semibold text-slate-700 block mb-1">4. Documento de Identidad (Soporte PDF) *</span>
+              <span className="font-semibold text-slate-700 block mb-1">4. Soporte Documento Identidad *</span>
               <input type="file" accept=".pdf" onChange={(e) => handleFileChange(e, 'id')} className="w-full text-slate-500" required />
             </div>
           </div>
@@ -212,7 +232,7 @@ function Convocatorias({ usuario }) {
           type="submit"
           className="w-full py-3 bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-bold rounded-xl shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider text-sm mt-2"
         >
-          Procesar Solicitud con 4 Archivos
+          Enviar Propuesta de Investigación
         </button>
       </form>
     </div>
