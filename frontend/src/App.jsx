@@ -6,6 +6,7 @@ import Noticias from './components/Noticias';
 import Convocatorias from "./components/Convocatorias";
 import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 import CrearConvocatoria from "./components/CrearConvocatoria";
+import MisSolicitudes from "./components/MisSolicitudes";
 
 const ControlUsuarios = () => {
   return (
@@ -59,6 +60,13 @@ function App() {
             }}
           />
         );
+      case 'mis_solicitudes':
+        return (
+          <MisSolicitudes 
+            usuario={usuario} 
+            alRedireccionarConvocatorias={() => setVistaActual('convocatorias_abiertas')} 
+          />
+        );
       case 'control_usuarios': 
         return <ControlUsuarios />;
       default: 
@@ -97,6 +105,16 @@ function App() {
           >
             <span>📢</span> Convocatorias
           </button>
+
+          {/* Menú visible para Docentes (Historial de Radicaciones) */}
+          {usuario.rol === 'Docente' && (
+            <button 
+              onClick={() => cambiarVistaLimpia('mis_solicitudes')} 
+              className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
+            >
+              <span>📁</span> Mis Solicitudes
+            </button>
+          )}
 
           {usuario.rol === 'Admin' && (
             <>
