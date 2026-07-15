@@ -7,7 +7,6 @@ import Convocatorias from "./components/Convocatorias";
 import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 import CrearConvocatoria from "./components/CrearConvocatoria";
 
-// Componente temporal/marcador para evitar errores si no se importa externamente
 const ControlUsuarios = () => {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-4xl mx-auto">
@@ -54,6 +53,10 @@ function App() {
               setConvocatoriaSeleccionada(c); 
               setVistaActual('formulario_radicacion'); 
             }} 
+            alEditarConvocatoria={(c) => {
+              setConvocatoriaSeleccionada(c);
+              setVistaActual('crear_convocatoria');
+            }}
           />
         );
       case 'control_usuarios': 
