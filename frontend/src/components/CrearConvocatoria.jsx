@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'ajax';
+import axios from 'axios';
 
 function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
 const [formData, setFormData] = useState({
