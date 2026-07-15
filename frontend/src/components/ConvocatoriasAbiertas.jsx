@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const API_BASE = 'http://localhost:5000/api';
+
 function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria, usuario }) {
   const [convocatorias, setConvocatorias] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -11,7 +13,7 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
   const obtenerConvocatorias = async () => {
     try {
       setCargando(true);
-      const response = await axios.get('http://localhost:5000/api/convocatorias');
+      const response = await axios.get(`${API_BASE}/convocatorias`);
       if (response.data.status === 'success') {
         setConvocatorias(response.data.data);
       }
@@ -31,13 +33,11 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
     if (!window.confirm('¿Estás seguro de que deseas eliminar esta convocatoria? Esta acción no se puede deshacer.')) {
       return;
     }
-
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.delete(`http://localhost:5000/api/convocatorias/${id}`, {
+      const response = await axios.delete(`${API_BASE}/convocatorias/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-
       if (response.data.status === 'success') {
         alert('Convocatoria eliminada correctamente');
         setConvocatorias(prev => prev.filter(c => c.id !== id));
@@ -53,9 +53,7 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
     return fecha.toLocaleDateString('es-CO', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     });
   };
 
@@ -71,13 +69,17 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
     <div className="w-full max-w-5xl mt-2">
       <div className="mb-6 text-left flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-extrabold text-white drop-shadow-md">Convocatorias Vigentes</h2>
-          <p className="text-slate-200 text-sm mt-1">Seleccione la convocatoria de su interés para radicar la documentación de su propuesta.</p>
+          <h2 className="text-3xl font-extrabold text-slate-800 drop-shadow-sm">
+            Convocatorias Vigentes
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">
+            Seleccione la convocatoria de su interés para radicar la documentación de su propuesta.
+          </p>
         </div>
         {esAdmin && (
           <button 
             onClick={obtenerConvocatorias}
-            className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-lg backdrop-blur-sm text-xs font-semibold transition"
+            className="p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition"
           >
             🔄 Sincronizar Base de Datos
           </button>
@@ -91,7 +93,7 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
       )}
 
       {convocatorias.length === 0 ? (
-        <div className="text-center bg-white/90 backdrop-blur-sm p-12 rounded-2xl border border-white/40 shadow-xl">
+        <div className="text-center bg-white/90 backdrop-blur-sm p-12 rounded-2xl border border-slate-200 shadow-xl">
           <span className="text-5xl">📭</span>
           <h3 className="text-xl font-bold text-slate-700 mt-4">No hay convocatorias registradas</h3>
           <p className="text-slate-500 text-sm mt-1">Vuelve más tarde o crea una desde el panel de administración.</p>
@@ -99,14 +101,13 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {convocatorias.map((conv) => (
-            <div key={conv.id} className="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:shadow-2xl transition-all">
-              
+            <div key={conv.id} className="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-md border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 hover:shadow-xl transition-all">
               <div className="flex-1 space-y-2 text-left w-full">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="bg-[#5B9BD5]/20 text-[#3a7cb8] text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
                     {conv.codigo}
                   </span>
-                  <span className="bg-[#70AD47]/20 text-[#548433] text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+                  <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
                     Cierre: {formatearFecha(conv.fecha_cierre)}
                   </span>
                   <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
@@ -148,7 +149,6 @@ function ConvocatoriasAbiertas({ alSeleccionarConvocatoria, alEditarConvocatoria
                   </button>
                 )}
               </div>
-
             </div>
           ))}
         </div>
