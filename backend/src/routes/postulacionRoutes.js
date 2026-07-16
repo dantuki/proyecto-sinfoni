@@ -41,8 +41,22 @@ const cpUpload = upload.fields([
   { name: 'id', maxCount: 1 }
 ]);
 
+const handleMulterUpload = (req, res, next) => {
+  cpUpload(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ status: 'error', message: 'Uno de los archivos excede el límite de peso permitido (10MB).' });
+      }
+      return res.status(400).json({ status: 'error', message: `Error de carga: ${err.message}` });
+    } else if (err) {
+      return res.status(400).json({ status: 'error', message: err.message });
+    }
+    next();
+  });
+};
+
 // Rutas de uso para Docentes (Radicación e Historial)
-router.post('/radicar', verificarToken, cpUpload, postulacionController.createPostulacion);
+router.post('/radicar', verificarToken, handleMulterUpload, postulacionController.createPostulacion);
 router.get('/mis-solicitudes', verificarToken, postulacionController.getPostulacionesByUser);
 
 // Rutas Administrativas de SINFONI (Fase 4: Consola de Administración)

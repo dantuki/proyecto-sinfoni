@@ -91,7 +91,6 @@ const getPostulacionesByUser = async (req, res) => {
 // 3. Obtener todas las propuestas para el panel de administración (Admin)
 const getPostulacionesAdmin = async (req, res) => {
   try {
-    // CORREGIDO: u.email en lugar de u.correo para coincidir con la estructura real de tu SQL
     const query = `
       SELECT 
         s.id,
@@ -102,6 +101,7 @@ const getPostulacionesAdmin = async (req, res) => {
         s.honestidad_url AS honestidad,
         s.id_url AS id_documento,
         s.estado,
+        s.motivo_decision,
         s.created_at AS fecha_radicacion,
         s.observaciones,
         s.sede_id AS sede,
@@ -147,7 +147,7 @@ const getPostulacionesAdmin = async (req, res) => {
 const updateEstadoPostulacion = async (req, res) => {
   try {
     const { id } = req.params;
-    const { estado } = req.body;
+    const { estado, motivo_decision } = req.body;
 
     const estadosValidos = ['Borrador', 'Radicado', 'En Evaluación', 'Aprobado', 'Rechazado'];
     if (!estado || !estadosValidos.includes(estado)) {
@@ -157,10 +157,10 @@ const updateEstadoPostulacion = async (req, res) => {
       });
     }
 
-    const query = 'UPDATE solicitudes SET estado = ? WHERE id = ?';
-    const [result] = await db.query(query, [estado, id]);
+    // Usamos el método optimizado del modelo que actualiza estado y motivo de decisión
+    const affectedRows = await Solicitud.updateEstado(id, estado, motivo_decision);
 
-    if (result.affectedRows === 0) {
+    if (affectedRows === 0) {
       return res.status(404).json({
         status: "error",
         message: "No se encontró la propuesta solicitada para modificar su estado."

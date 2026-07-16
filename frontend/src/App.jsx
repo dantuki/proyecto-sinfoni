@@ -20,20 +20,43 @@ const ControlUsuarios = () => {
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
-  const [vistaActual, setVistaActual] = useState('inicio');
+  // Implementamos un sistema de historial de vistas en lugar de un único string plano
+  const [historial, setHistorial] = useState(['inicio']);
   const [convocatoriaSeleccionada, setConvocatoriaSeleccionada] = useState(null);
+
+  // La vista activa siempre será la última agregada a nuestro historial
+  const vistaActual = historial[historial.length - 1] || 'inicio';
 
   if (!usuario) return <Login alAutenticar={setUsuario} />;
 
+  // Navegación desde la barra lateral (resetea el historial a la raíz para evitar loops infinitos)
   const cambiarVistaLimpia = (nuevaVista) => {
     setConvocatoriaSeleccionada(null);
-    setVistaActual(nuevaVista);
+    if (nuevaVista === 'inicio') {
+      setHistorial(['inicio']);
+    } else {
+      setHistorial(['inicio', nuevaVista]);
+    }
+  };
+
+  // Añade una nueva vista al flujo actual del historial
+  const navegarA = (nuevaVista) => {
+    if (historial[historial.length - 1] !== nuevaVista) {
+      setHistorial((prev) => [...prev, nuevaVista]);
+    }
+  };
+
+  // Retrocede un paso en el historial de navegación
+  const volverAtras = () => {
+    if (historial.length > 1) {
+      setHistorial((prev) => prev.slice(0, -1));
+    }
   };
 
   const renderizarVista = () => {
     switch(vistaActual) {
       case 'inicio': 
-        return <InicioCards cambiarVista={setVistaActual} usuario={usuario} />;
+        return <InicioCards cambiarVista={navegarA} usuario={usuario} />;
       case 'datos_personales': 
         return <DatosPersonales usuario={usuario} />;
       case 'noticias': 
@@ -44,7 +67,7 @@ function App() {
         return (
           <CrearConvocatoria 
             convocatoriaAEditar={convocatoriaSeleccionada} 
-            alFinalizar={() => setVistaActual('convocatorias_abiertas')} 
+            alFinalizar={() => cambiarVistaLimpia('convocatorias_abiertas')} 
           />
         );
       case 'convocatorias_abiertas': 
@@ -53,11 +76,11 @@ function App() {
             usuario={usuario} 
             alSeleccionarConvocatoria={(c) => { 
               setConvocatoriaSeleccionada(c); 
-              setVistaActual('formulario_radicacion'); 
+              navegarA('formulario_radicacion'); 
             }} 
             alEditarConvocatoria={(c) => {
               setConvocatoriaSeleccionada(c);
-              setVistaActual('crear_convocatoria');
+              navegarA('crear_convocatoria');
             }}
           />
         );
@@ -65,7 +88,7 @@ function App() {
         return (
           <MisSolicitudes 
             usuario={usuario} 
-            alRedireccionarConvocatorias={() => setVistaActual('convocatorias_abiertas')} 
+            alRedireccionarConvocatorias={() => cambiarVistaLimpia('convocatorias_abiertas')} 
           />
         );
       case 'revisar_solicitudes':
@@ -150,11 +173,25 @@ function App() {
       {/* Área de Contenido Principal */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <header className="h-16 bg-white shadow-sm flex items-center justify-between px-8 z-10">
-          <span className="font-semibold text-slate-700">
-            Usuario: <strong className="text-slate-900 font-bold">{usuario.nombre_completo}</strong>
-          </span>
+          <div className="flex items-center gap-4">
+            {/* Botón Volver Global y Adaptativo */}
+            {historial.length > 1 && (
+              <button 
+                onClick={volverAtras} 
+                className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-slate-600 hover:text-[#5B9BD5] bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl transition-all shadow-sm"
+              >
+                ⬅️ Volver
+              </button>
+            )}
+            <span className="font-semibold text-slate-700">
+              Usuario: <strong className="text-slate-900 font-bold">{usuario.nombre_completo}</strong>
+            </span>
+          </div>
           <button 
-            onClick={() => setUsuario(null)} 
+            onClick={() => {
+              setUsuario(null);
+              setHistorial(['inicio']);
+            }} 
             className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-full font-semibold transition-colors"
           >
             Cerrar Sesión

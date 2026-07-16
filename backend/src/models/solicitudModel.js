@@ -51,7 +51,20 @@ const Solicitud = {
   },
 
   create: async (data) => {
-    const { usuario_id, convocatoria_id, sede_id, num_solicitud, titulo_propuesta, observaciones, estado, presupuesto_url, cronograma_url, honestidad_url, id_url } = data;
+    const { 
+      usuario_id, 
+      convocatoria_id, 
+      sede_id, 
+      num_solicitud, 
+      titulo_propuesta, 
+      observaciones, 
+      estado, 
+      presupuesto_url, 
+      cronograma_url, 
+      honestidad_url, 
+      id_url 
+    } = data;
+
     const [result] = await db.query(
       `INSERT INTO solicitudes 
        (usuario_id, convocatoria_id, sede_id, num_solicitud, titulo_propuesta, observaciones, estado, presupuesto_url, cronograma_url, honestidad_url, id_url) 
@@ -62,12 +75,36 @@ const Solicitud = {
   },
 
   update: async (id, data) => {
-    const { usuario_id, convocatoria_id, sede_id, num_solicitud, titulo_propuesta, observaciones, estado, motivo_decision, doc_par_1, doc_par_2, presupuesto_url, cronograma_url, honestidad_url, id_url } = data;
+    const { 
+      usuario_id, 
+      convocatoria_id, 
+      sede_id, 
+      num_solicitud, 
+      titulo_propuesta, 
+      observaciones, 
+      estado, 
+      motivo_decision, 
+      doc_par_1, 
+      doc_par_2, 
+      presupuesto_url, 
+      cronograma_url, 
+      honestidad_url, 
+      id_url 
+    } = data;
+
     const [result] = await db.query(
       `UPDATE solicitudes SET 
        usuario_id = ?, convocatoria_id = ?, sede_id = ?, num_solicitud = ?, titulo_propuesta = ?, observaciones = ?, estado = ?, motivo_decision = ?, doc_par_1 = ?, doc_par_2 = ?, presupuesto_url = ?, cronograma_url = ?, honestidad_url = ?, id_url = ? 
        WHERE id = ?`,
-      [usuario_id, convocatoria_id, sede_id, num_solicitud, titulo_propuesta, observaciones, estado, motivo_decision || null, doc_par_1, doc_par_2, presupuesto_url, cronograma_url, honestidad_url, id_url, id]
+      [usuario_id, convocatoria_id, sede_id, num_solicitud, titulo_propuesta, observaciones || null, estado, motivo_decision || null, doc_par_1 || null, doc_par_2 || null, presupuesto_url, cronograma_url, honestidad_url, id_url, id]
+    );
+    return result.affectedRows;
+  },
+
+  updateEstado: async (id, estado, motivo_decision) => {
+    const [result] = await db.query(
+      `UPDATE solicitudes SET estado = ?, motivo_decision = ? WHERE id = ?`,
+      [estado, motivo_decision || null, id]
     );
     return result.affectedRows;
   },
