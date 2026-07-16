@@ -33,7 +33,9 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
   const guardarCambioEstado = async (estadoDestino, motivoTexto) => {
     setEnviando(true);
     try {
-      const token = localStorage.getItem('token');
+      // CORRECCIÓN DE SESIÓN: Lectura de token redundante
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      
       const respuesta = await axios.put(`${API_BASE}/postulaciones/${sol.id}/estado`, {
         estado: estadoDestino,
         motivo_decision: estadoDestino === 'Rechazado' ? motivoTexto : null
@@ -191,7 +193,11 @@ function RevisarSolicitudes({ usuario }) {
   const obtenerSolicitudes = async () => {
     try {
       setCargando(true);
-      const token = localStorage.getItem('token');
+      setError(null);
+      
+      // CORRECCIÓN DE SESIÓN: Buscar token en ambos almacenes para evitar pérdida en pestañas inactivas
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      
       const respuesta = await axios.get(`${API_BASE}/postulaciones`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -332,7 +338,7 @@ function RevisarSolicitudes({ usuario }) {
           <p className="text-slate-500 text-sm font-medium mt-4">Consultando base de datos de SINFONI...</p>
         </div>
       ) : error ? (
-        <div className="bg-red-50/50 p-8 rounded-3xl border border-red-100/60 text-center max-w-md mx-auto">
+        <div className="bg-red-50/50 p-8 rounded-3xl border border-red-100/60 text-center max-w-md mx-auto animate-fade-in">
           <span className="text-4xl">❌</span>
           <h3 className="text-lg font-bold text-red-800 mt-4">Error de Comunicación</h3>
           <p className="text-red-600 text-xs mt-1 leading-relaxed">{error}</p>

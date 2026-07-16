@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 
 export default function AuthContainer({ alAutenticar }) {
@@ -6,6 +6,8 @@ export default function AuthContainer({ alAutenticar }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
+
+  const recaptchaRef = useRef(null);
 
   // Estados para capturar los datos de los formularios
   const [nombreCompleto, setNombreCompleto] = useState('');
@@ -20,6 +22,9 @@ export default function AuthContainer({ alAutenticar }) {
   // Cambiar entre Login y Registro limpiando estados
   const alternarVista = (v) => {
     setIsLogin(v);
+    if (recaptchaRef.current) {
+      recaptchaRef.current.reset();
+    }
     setCaptchaToken(null);
     setError('');
     setMensajeExito('');
@@ -55,13 +60,19 @@ export default function AuthContainer({ alAutenticar }) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Error al iniciar sesión.');
+        setError(data.error || data.details || 'Error al iniciar sesión.');
+        if (recaptchaRef.current) {
+          recaptchaRef.current.reset();
+        }
+        setCaptchaToken(null);
         return;
       }
 
-      // CAMBIO AQUÍ: Guardamos en sessionStorage para aislar las pestañas de pruebas
+      // Guardamos tanto en sessionStorage como en localStorage para mayor seguridad e integración de componentes
       sessionStorage.setItem('token', data.token);
       sessionStorage.setItem('userId', data.user.id);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userId', data.user.id);
 
       const usuarioFormateado = {
         id: data.user.id,
@@ -74,6 +85,10 @@ export default function AuthContainer({ alAutenticar }) {
 
     } catch (err) {
       setError('No se pudo conectar con el servidor. Verifica que esté encendido.');
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+      setCaptchaToken(null);
     }
   };
 
@@ -109,7 +124,12 @@ export default function AuthContainer({ alAutenticar }) {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Error al crear la cuenta.');
+        // Mostramos el error del backend (incluidos detalles de SQL si ocurriesen)
+        setError(data.error || data.details || 'Error al crear la cuenta.');
+        if (recaptchaRef.current) {
+          recaptchaRef.current.reset();
+        }
+        setCaptchaToken(null);
         return;
       }
 
@@ -121,6 +141,10 @@ export default function AuthContainer({ alAutenticar }) {
 
     } catch (err) {
       setError('Error de red. No se pudo guardar el usuario.');
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+      setCaptchaToken(null);
     }
   };
 
@@ -142,7 +166,7 @@ export default function AuthContainer({ alAutenticar }) {
           </div>
 
           {error && (
-            <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center">
+            <div className="p-3 text-xs font-semibold text-red-600 bg-red-50 rounded-xl border border-red-100 text-center whitespace-pre-wrap">
               ⚠️ {error}
             </div>
           )}
@@ -204,6 +228,7 @@ export default function AuthContainer({ alAutenticar }) {
 
                 <div className="flex justify-center my-2">
                   <ReCAPTCHA
+                    ref={recaptchaRef}
                     sitekey="6LfwDj4tAAAAANDLp_sh7UeUC1e8sgZ1LUfMBglj"
                     onChange={(token) => setCaptchaToken(token)}
                   />
@@ -301,6 +326,7 @@ export default function AuthContainer({ alAutenticar }) {
 
                 <div className="flex justify-center my-2">
                   <ReCAPTCHA
+                    ref={recaptchaRef}
                     sitekey="6LfwDj4tAAAAANDLp_sh7UeUC1e8sgZ1LUfMBglj"
                     onChange={(token) => setCaptchaToken(token)}
                   />

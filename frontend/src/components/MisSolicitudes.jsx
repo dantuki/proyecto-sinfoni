@@ -12,7 +12,8 @@ function MisSolicitudes() {
     setCargando(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
+      // Leemos de sessionStorage de manera segura
+      const token = sessionStorage.getItem('token');
       const respuesta = await axios.get(`${API_BASE}/postulaciones/mis-solicitudes`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -148,41 +149,49 @@ function MisSolicitudes() {
                   Documentación Anexa
                 </span>
                 
-                <a 
-                  href={`http://localhost:5000${sol.presupuesto_url}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
-                >
-                  📄 Presupuesto.pdf
-                </a>
+                {sol.presupuesto_url && (
+                  <a 
+                    href={`http://localhost:5000/${sol.presupuesto_url.startsWith('/') ? sol.presupuesto_url.slice(1) : sol.presupuesto_url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    📄 Presupuesto.pdf
+                  </a>
+                )}
 
-                <a 
-                  href={`http://localhost:5000${sol.cronograma_url}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
-                >
-                  📅 Cronograma.pdf
-                </a>
+                {sol.cronograma_url && (
+                  <a 
+                    href={`http://localhost:5000/${sol.cronograma_url.startsWith('/') ? sol.cronograma_url.slice(1) : sol.cronograma_url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    📅 Cronograma.pdf
+                  </a>
+                )}
 
-                <a 
-                  href={`http://localhost:5000${sol.honestidad_url}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
-                >
-                  ✍️ Honestidad.pdf
-                </a>
+                {sol.honestidad_url && (
+                  <a 
+                    href={`http://localhost:5000/${sol.honestidad_url.startsWith('/') ? sol.honestidad_url.slice(1) : sol.honestidad_url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    ✍️ Honestidad.pdf
+                  </a>
+                )}
 
-                <a 
-                  href={`http://localhost:5000${sol.id_url}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
-                >
-                  🆔 Identificación.pdf
-                </a>
+                {sol.id_url && (
+                  <a 
+                    href={`http://localhost:5000/${sol.id_url.startsWith('/') ? sol.id_url.slice(1) : sol.id_url}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
+                  >
+                    🆔 Identificación.pdf
+                  </a>
+                )}
               </div>
             </div>
           ))}

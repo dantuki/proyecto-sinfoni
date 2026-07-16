@@ -20,16 +20,27 @@ const ControlUsuarios = () => {
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
-  // Implementamos un sistema de historial de vistas en lugar de un único string plano
   const [historial, setHistorial] = useState(['inicio']);
   const [convocatoriaSeleccionada, setConvocatoriaSeleccionada] = useState(null);
 
-  // La vista activa siempre será la última agregada a nuestro historial
   const vistaActual = historial[historial.length - 1] || 'inicio';
+
+  // CAMBIO AQUÍ: Función dedicada para cerrar sesión de manera segura limpiando el storage
+  const handleLogout = () => {
+    // Limpiamos sessionStorage (nuevo sistema)
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('userId');
+
+    // Limpiamos localStorage por si quedó basura de antes
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+
+    setUsuario(null);
+    setHistorial(['inicio']);
+  };
 
   if (!usuario) return <Login alAutenticar={setUsuario} />;
 
-  // Navegación desde la barra lateral (resetea el historial a la raíz para evitar loops infinitos)
   const cambiarVistaLimpia = (nuevaVista) => {
     setConvocatoriaSeleccionada(null);
     if (nuevaVista === 'inicio') {
@@ -39,14 +50,12 @@ function App() {
     }
   };
 
-  // Añade una nueva vista al flujo actual del historial
   const navegarA = (nuevaVista) => {
     if (historial[historial.length - 1] !== nuevaVista) {
       setHistorial((prev) => [...prev, nuevaVista]);
     }
   };
 
-  // Retrocede un paso en el historial de navegación
   const volverAtras = () => {
     if (historial.length > 1) {
       setHistorial((prev) => prev.slice(0, -1));
@@ -108,7 +117,6 @@ function App() {
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
-      {/* Sidebar de Navegación */}
       <aside className="w-64 bg-[#2d3748] text-white flex flex-col shadow-2xl">
         <div 
           className="p-6 bg-white border-b border-slate-200 text-center cursor-pointer" 
@@ -132,7 +140,6 @@ function App() {
             <span>📢</span> Convocatorias
           </button>
 
-          {/* Menú visible para Docentes (Historial de Radicaciones) */}
           {usuario.rol === 'Docente' && (
             <button 
               onClick={() => cambiarVistaLimpia('mis_solicitudes')} 
@@ -142,7 +149,6 @@ function App() {
             </button>
           )}
 
-          {/* Opciones exclusivas del Administrador */}
           {usuario.rol === 'Admin' && (
             <>
               <button 
@@ -170,11 +176,9 @@ function App() {
         </nav>
       </aside>
 
-      {/* Área de Contenido Principal */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <header className="h-16 bg-white shadow-sm flex items-center justify-between px-8 z-10">
           <div className="flex items-center gap-4">
-            {/* Botón Volver Global y Adaptativo */}
             {historial.length > 1 && (
               <button 
                 onClick={volverAtras} 
@@ -187,11 +191,9 @@ function App() {
               Usuario: <strong className="text-slate-900 font-bold">{usuario.nombre_completo}</strong>
             </span>
           </div>
+          {/* CAMBIO AQUÍ: Llamamos a la función handleLogout */}
           <button 
-            onClick={() => {
-              setUsuario(null);
-              setHistorial(['inicio']);
-            }} 
+            onClick={handleLogout} 
             className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-full font-semibold transition-colors"
           >
             Cerrar Sesión

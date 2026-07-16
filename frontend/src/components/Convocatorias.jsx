@@ -18,7 +18,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [cargando, setCargando] = useState(false);
 
-  // Lista de sedes según tu interfaz
   const sedes = [
     "Apartadó", "Arauca", "Barrancabermeja", "Bogotá", "Bucaramanga", 
     "Cali", "Cartago", "El Espinal", "Ibagué", "Medellín", "Montería", 
@@ -56,22 +55,26 @@ const Convocatorias = ({ usuario, convocatoria }) => {
     setCargando(true);
 
     const dataToSend = new FormData();
-    // Obtenemos el ID del usuario autenticado (pasado como prop o desde el localStorage)
-    dataToSend.append('usuario_id', usuario?.id || localStorage.getItem('userId') || '');
-    dataToSend.append('convocatoria_id', convocatoria?.id || '');
-    dataToSend.append('sede_vinculacion', formData.sede_vinculacion);
+    // Intenta leer el userId desde props, sessionStorage o localStorage de manera segura
+    const userId = usuario?.id || sessionStorage.getItem('userId') || localStorage.getItem('userId') || '';
+    
+    dataToSend.append('usuario_id', userId);
+    dataToSend.append('convocatoriaId', convocatoria?.id || '');
+    dataToSend.append('sede', formData.sede_vinculacion); 
     dataToSend.append('titulo_propuesta', formData.titulo_propuesta);
     dataToSend.append('observaciones', formData.observaciones);
 
-    // Adjuntar los 4 documentos obligatorios
     dataToSend.append('presupuesto', archivos.presupuesto);
     dataToSend.append('cronograma', archivos.cronograma);
     dataToSend.append('honestidad', archivos.honestidad);
-    dataToSend.append('identidad', archivos.identidad);
+    dataToSend.append('identidad', archivos.identidad); 
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/solicitudes', dataToSend, {
+      // Intentamos obtener el token de sessionStorage o localStorage de manera híbrida
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      
+      // CORREGIDO: Ahora apunta a '/api/postulaciones/radicar' para coincidir con tu index.js
+      const res = await axios.post('http://localhost:5000/api/postulaciones/radicar', dataToSend, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -87,7 +90,7 @@ const Convocatorias = ({ usuario, convocatoria }) => {
         setArchivos({ presupuesto: null, cronograma: null, honestidad: null, identidad: null });
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error al radicar la postulación:", err);
       setMensaje({ 
         tipo: 'error', 
         texto: err.response?.data?.message || 'Error al procesar la radicación.' 
@@ -100,7 +103,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
       
-      {/* Encabezado Informativo de la Convocatoria */}
       <div className="border-b border-slate-100 pb-6 mb-6">
         <span className="text-xs font-bold text-[#5B9BD5] uppercase tracking-wider block mb-1">
           Postulándote a la convocatoria:
@@ -118,7 +120,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
         </div>
       </div>
 
-      {/* BANNER DINÁMICO: Google Drive */}
       {convocatoria?.plantillas_url && (
         <div className="bg-[#5B9BD5]/10 border border-[#5B9BD5]/30 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -140,7 +141,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
         </div>
       )}
 
-      {/* Formulario de Radicación */}
       <div>
         <h3 className="text-lg font-bold text-slate-800 mb-1">Radicación de Propuesta</h3>
         <p className="text-slate-400 text-xs mb-6">
@@ -160,7 +160,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* Código Único (Automático) */}
             <div className="flex flex-col">
               <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
                 Código Único de Propuesta (Automático)
@@ -173,7 +172,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
               />
             </div>
 
-            {/* Sede de Vinculación */}
             <div className="flex flex-col">
               <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
                 Sede de Vinculación *
@@ -186,14 +184,13 @@ const Convocatorias = ({ usuario, convocatoria }) => {
                 required
               >
                 <option value="">-- Seleccione una sede --</option>
-                {sedes.map((sede) => (
-                  <option key={sede} value={sede}>{sede}</option>
+                {sedes.map((sede, index) => (
+                  <option key={sede} value={index + 1}>{sede}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Título de Propuesta */}
           <div className="flex flex-col">
             <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
               Título de la Propuesta *
@@ -209,7 +206,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
             />
           </div>
 
-          {/* Observaciones */}
           <div className="flex flex-col">
             <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
               Observaciones Iniciales
@@ -224,7 +220,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
             />
           </div>
 
-          {/* Carga de PDFs */}
           <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl mt-6">
             <h4 className="text-sm font-bold text-slate-600 mb-4 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-2">
               📂 Documentación Obligatoria (Formatos PDF)
@@ -232,7 +227,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              {/* 1. Presupuesto */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
                 <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
                   1. Presupuesto General *
@@ -251,7 +245,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
                 )}
               </div>
 
-              {/* 2. Cronograma */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
                 <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
                   2. Cronograma de Actividades *
@@ -270,7 +263,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
                 )}
               </div>
 
-              {/* 3. Honestidad */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
                 <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
                   3. Declaración de Honestidad *
@@ -289,7 +281,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
                 )}
               </div>
 
-              {/* 4. Identidad */}
               <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
                 <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
                   4. Soporte Documento Identidad *
@@ -311,7 +302,6 @@ const Convocatorias = ({ usuario, convocatoria }) => {
             </div>
           </div>
 
-          {/* Botón de Enviar */}
           <button
             type="submit"
             disabled={cargando}
@@ -321,7 +311,7 @@ const Convocatorias = ({ usuario, convocatoria }) => {
           >
             {cargando ? 'Enviando Propuesta...' : 'Enviar Propuesta de Investigación'}
           </button>
-        </form>
+        </form> 
       </div>
     </div>
   );

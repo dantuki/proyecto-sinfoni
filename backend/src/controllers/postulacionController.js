@@ -8,30 +8,34 @@ const createPostulacion = async (req, res) => {
     const usuarioId = req.user?.id; 
     const archivos = req.files;
 
-    if (!archivos || !archivos.presupuesto || !archivos.cronograma || !archivos.honestidad || !archivos.id) {
+    // Validación de archivos obligatorios ajustando 'id' a 'identidad'
+    if (!archivos || !archivos.presupuesto || !archivos.cronograma || !archivos.honestidad || !archivos.identidad) {
       return res.status(400).json({ 
         status: "error", 
-        message: "Los 4 archivos PDF (Presupuesto, Cronograma, Declaración e Identificación) son obligatorios." 
+        message: "Los 4 archivos PDF (Presupuesto, Cronograma, Declaración de Honestidad y Documento de Identidad) son obligatorios." 
       });
     }
 
-    if (!codigoPropuesta || !titulo_propuesta || !sede || !convocatoriaId) {
+    // El código de propuesta se genera automáticamente si no viene del frontend
+    const finalCodigoPropuesta = codigoPropuesta || `SINFONI-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    if (!titulo_propuesta || !sede || !convocatoriaId) {
       return res.status(400).json({ 
         status: "error", 
-        message: "El código de propuesta, el título, la convocatoria y la sede son campos obligatorios." 
+        message: "El título, la convocatoria y la sede son campos obligatorios." 
       });
     }
 
     const presupuesto_url = archivos.presupuesto[0].path.replace(/\\/g, '/');
     const cronograma_url = archivos.cronograma[0].path.replace(/\\/g, '/');
     const honestidad_url = archivos.honestidad[0].path.replace(/\\/g, '/');
-    const id_url = archivos.id[0].path.replace(/\\/g, '/');
+    const id_url = archivos.identidad[0].path.replace(/\\/g, '/'); // Extraído de archivos.identidad
 
     const nuevaSolicitudId = await Solicitud.create({
       usuario_id: usuarioId,
       convocatoria_id: parseInt(convocatoriaId),
       sede_id: parseInt(sede),
-      num_solicitud: codigoPropuesta,
+      num_solicitud: finalCodigoPropuesta,
       titulo_propuesta: titulo_propuesta,
       observaciones: observaciones || null,
       estado: 'Radicado', 
@@ -46,7 +50,7 @@ const createPostulacion = async (req, res) => {
       message: "Propuesta radicada exitosamente en la base de datos con sus 4 documentos.",
       data: {
         id: nuevaSolicitudId,
-        codigoPropuesta,
+        codigoPropuesta: finalCodigoPropuesta,
         titulo_propuesta,
         usuarioId,
         archivos: {
@@ -68,10 +72,18 @@ const createPostulacion = async (req, res) => {
   }
 };
 
-// 2. Obtener historial del docente logueado
+// 2. Obtener historial del docente logueado (PROTEGIDO)
 const getPostulacionesByUser = async (req, res) => {
   try {
     const usuarioId = req.user?.id; 
+
+    if (!usuarioId) {
+      return res.status(401).json({
+        status: "error",
+        message: "No se pudo identificar al usuario autenticado. Token inválido o ausente."
+      });
+    }
+
     const solicitudes = await Solicitud.getByUserId(usuarioId);
 
     res.status(200).json({ 
@@ -88,9 +100,19 @@ const getPostulacionesByUser = async (req, res) => {
   }
 };
 
-// 3. Obtener todas las propuestas para el panel de administración (Admin)
+// 3. Obtener todas las propuestas para el panel de administración (Admin - PROTEGIDO)
 const getPostulacionesAdmin = async (req, res) => {
   try {
+    // Validación estricta de Rol para evitar fuga de solicitudes de otros profesores
+    const userRole = req.user?.rol || req.user?.role;
+
+    if (userRole !== 'Admin') {
+      return res.status(403).json({
+        status: "error",
+        message: "Acceso denegado. No tienes permisos para visualizar la bandeja global de postulaciones."
+      });
+    }
+
     const query = `
       SELECT 
         s.id,
@@ -157,7 +179,6 @@ const updateEstadoPostulacion = async (req, res) => {
       });
     }
 
-    // Si el nuevo estado no es "Rechazado", anulamos el motivo de decisión anterior
     const motivoFinal = estado === 'Rechazado' ? motivo_decision : null;
 
     const affectedRows = await Solicitud.updateEstado(id, estado, motivoFinal);

@@ -11,7 +11,8 @@ const solicitudRoutes = require('./routes/solicitudRoutes');
 const asignacionRoutes = require('./routes/asignacionRoutes');
 const authRoutes = require('./routes/authRoutes'); 
 const noticiaRoutes = require('./routes/noticiaRoutes'); 
-const postulacionRoutes = require('./routes/postulacionRoutes'); // <-- Importado con éxito
+// CORREGIDO: 'postulacionRoutes' en singular para coincidir exactamente con tu archivo físico
+const postulacionRoutes = require('./routes/postulacionRoutes');
 
 dotenv.config();
 const app = express();
@@ -35,6 +36,16 @@ app.use('/api/asignaciones', asignacionRoutes);
 app.use('/api/auth', authRoutes); 
 app.use('/api/noticias', noticiaRoutes); 
 app.use('/api/postulaciones', postulacionRoutes); // <-- Registrado con éxito
+
+// Manejador global para errores capturados en Express para evitar caídas
+app.use((err, req, res, next) => {
+  console.error("Error capturado globalmente:", err);
+  res.status(err.status || 500).json({
+    status: "error",
+    message: err.message || "Error interno del servidor",
+    details: err.sqlMessage || err.message || null
+  });
+});
 
 app.get('/', (req, res) => {
   res.json({ mensaje: "API de SINFONI operativa", estado: "Limpio" });
