@@ -1,19 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api';
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-function Convocatorias({ usuario, convocatoria }) {
-  const [sedes, setSedes] = useState([]);
-  const [cargandoSedes, setCargandoSedes] = useState(true);
-  const [errorSedes, setErrorSedes] = useState(null);
-  const [enviando, setEnviando] = useState(false);
-
+const Convocatorias = ({ usuario, convocatoria }) => {
   const [formData, setFormData] = useState({
-    codigoPropuesta: '', 
     titulo_propuesta: '',
-    sede: '', 
+    sede_vinculacion: '',
     observaciones: ''
   });
 
@@ -21,296 +12,319 @@ function Convocatorias({ usuario, convocatoria }) {
     presupuesto: null,
     cronograma: null,
     honestidad: null,
-    id: null 
+    identidad: null
   });
 
-  const generarCodigoPropuesta = () => {
-    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let aleatorio = '';
-    for (let i = 0; i < 5; i++) {
-      aleatorio += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-    }
-    return `PROP-2026-${aleatorio}`;
-  };
+  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
+  const [cargando, setCargando] = useState(false);
 
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      codigoPropuesta: generarCodigoPropuesta()
-    }));
-
-    const obtenerSedesAPI = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const respuesta = await axios.get(`${API_BASE}/sedes`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-
-        if (respuesta.data.status === 'success') {
-          setSedes(respuesta.data.data);
-        } else {
-          throw new Error(respuesta.data.message || 'Error al procesar el listado de sedes.');
-        }
-      } catch (err) {
-        console.error("Error al cargar sedes:", err);
-        setErrorSedes(err.response?.data?.message || err.message);
-      } finally {
-        setCargandoSedes(false);
-      }
-    };
-
-    obtenerSedesAPI();
-  }, []);
+  // Lista de sedes según tu interfaz
+  const sedes = [
+    "Apartadó", "Arauca", "Barrancabermeja", "Bogotá", "Bucaramanga", 
+    "Cali", "Cartago", "El Espinal", "Ibagué", "Medellín", "Montería", 
+    "Neiva", "Pasto", "Pereira", "Popayán", "Quibdó", "Santa Marta", "Villavicencio"
+  ];
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
-  const handleFileChange = (e, tipo) => {
-    const archivo = e.target.files?.[0];
-    if (!archivo) return;
-
-    if (archivo.type !== 'application/pdf') {
-      alert('Error: Solo se admiten archivos en formato PDF.');
-      e.target.value = '';
-      return;
-    }
-
-    if (archivo.size > MAX_FILE_SIZE) {
-      alert('Error: El archivo no puede superar los 10MB.');
-      e.target.value = '';
-      return;
-    }
-
-    setArchivos(prev => ({ ...prev, [tipo]: archivo }));
+  const handleFileChange = (e, campo) => {
+    setArchivos({
+      ...archivos,
+      [campo]: e.target.files[0]
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMensaje({ tipo: '', texto: '' });
 
-    if (!convocatoria) {
-      alert("Error: Debes seleccionar una convocatoria activa primero.");
+    if (!formData.sede_vinculacion) {
+      setMensaje({ tipo: 'error', texto: 'Por favor seleccione una sede de vinculación.' });
       return;
     }
 
-    if (!archivos.presupuesto || !archivos.cronograma || !archivos.honestidad || !archivos.id) {
-      alert("Error: Por favor, sube todos los documentos obligatorios.");
+    if (!archivos.presupuesto || !archivos.cronograma || !archivos.honestidad || !archivos.identidad) {
+      setMensaje({ tipo: 'error', texto: 'Por favor cargue los 4 documentos obligatorios en formato PDF.' });
       return;
     }
 
-    setEnviando(true);
-    const token = localStorage.getItem('token');
-    
-    const payload = new FormData();
-    payload.append('codigoPropuesta', formData.codigoPropuesta);
-    payload.append('titulo_propuesta', formData.titulo_propuesta);
-    payload.append('sede', formData.sede);
-    payload.append('convocatoriaId', convocatoria.id);
-    payload.append('observaciones', formData.observaciones);
-    payload.append('presupuesto', archivos.presupuesto);
-    payload.append('cronograma', archivos.cronograma);
-    payload.append('honestidad', archivos.honestidad);
-    payload.append('id', archivos.id);
+    setCargando(true);
+
+    const dataToSend = new FormData();
+    // Obtenemos el ID del usuario autenticado (pasado como prop o desde el localStorage)
+    dataToSend.append('usuario_id', usuario?.id || localStorage.getItem('userId') || '');
+    dataToSend.append('convocatoria_id', convocatoria?.id || '');
+    dataToSend.append('sede_vinculacion', formData.sede_vinculacion);
+    dataToSend.append('titulo_propuesta', formData.titulo_propuesta);
+    dataToSend.append('observaciones', formData.observaciones);
+
+    // Adjuntar los 4 documentos obligatorios
+    dataToSend.append('presupuesto', archivos.presupuesto);
+    dataToSend.append('cronograma', archivos.cronograma);
+    dataToSend.append('honestidad', archivos.honestidad);
+    dataToSend.append('identidad', archivos.identidad);
 
     try {
-      const response = await axios.post(`${API_BASE}/postulaciones/radicar`, payload, {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('http://localhost:5000/api/solicitudes', dataToSend, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
         }
       });
 
-      if (response.data.status === 'success') {
-        alert(`¡Propuesta Radicada con Éxito!\nCódigo asignado: ${formData.codigoPropuesta}`);
-        setFormData({
-          codigoPropuesta: generarCodigoPropuesta(),
-          titulo_propuesta: '',
-          sede: '',
-          observaciones: ''
+      if (res.data.status === 'success') {
+        setMensaje({ 
+          tipo: 'success', 
+          texto: '¡Propuesta y documentación radicadas con éxito!' 
         });
-        setArchivos({ presupuesto: null, cronograma: null, honestidad: null, id: null });
-        e.target.reset();
+        setFormData({ titulo_propuesta: '', sede_vinculacion: '', observaciones: '' });
+        setArchivos({ presupuesto: null, cronograma: null, honestidad: null, identidad: null });
       }
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Ocurrió un error al intentar radicar la postulación.');
+      setMensaje({ 
+        tipo: 'error', 
+        texto: err.response?.data?.message || 'Error al procesar la radicación.' 
+      });
     } finally {
-      setEnviando(false);
+      setCargando(false);
     }
   };
 
-  if (!convocatoria) {
-    return (
-      <div className="bg-white p-8 rounded-3xl shadow-lg text-center max-w-md mx-auto mt-10 border border-slate-100">
-        <span className="text-5xl">⚠️</span>
-        <h3 className="text-xl font-bold text-slate-800 mt-4">Acceso al Formulario</h3>
-        <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-          Por favor, navega al módulo de convocatorias y haz clic en el botón <strong className="text-[#5B9BD5]">"Postularse 🚀"</strong> de la convocatoria de tu interés.
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-3xl shadow-xl max-w-3xl w-full text-slate-800 border border-slate-100/80 mt-2 p-8 transition-all duration-300">
-      <div className="bg-blue-50/50 border border-blue-100/60 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="text-left">
-          <span className="text-[10px] uppercase font-extrabold text-[#5B9BD5] tracking-wider block">Postulándote a la convocatoria:</span>
-          <h4 className="text-lg font-bold text-slate-800 mt-0.5">{convocatoria.titulo}</h4>
-          <p className="text-xs text-slate-500 mt-0.5">ID Identificador: <span className="font-mono font-bold text-slate-700">{convocatoria.codigo}</span></p>
-        </div>
-        <div className="bg-white px-4 py-2 rounded-xl border border-blue-100 shadow-sm text-xs font-bold text-slate-700 self-stretch sm:self-auto text-center whitespace-nowrap">
-          💰 Tope Máx: {convocatoria.presupuesto_max || 'Estándar'}
+    <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
+      
+      {/* Encabezado Informativo de la Convocatoria */}
+      <div className="border-b border-slate-100 pb-6 mb-6">
+        <span className="text-xs font-bold text-[#5B9BD5] uppercase tracking-wider block mb-1">
+          Postulándote a la convocatoria:
+        </span>
+        <h2 className="text-2xl font-extrabold text-slate-800 mb-2">
+          {convocatoria?.titulo || 'Cargando título...'}
+        </h2>
+        <div className="flex flex-wrap gap-4 text-sm text-slate-500 font-medium">
+          <span className="bg-slate-100 px-3 py-1 rounded-full text-xs">
+            ID Identificador: <strong className="text-slate-700">{convocatoria?.codigo || 'N/A'}</strong>
+          </span>
+          <span className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs flex items-center gap-1 font-bold">
+            💰 Tope Máx: ${Number(convocatoria?.presupuesto_max || 0).toLocaleString('es-CO')}
+          </span>
         </div>
       </div>
 
-      <div className="border-b border-slate-100 pb-5 mb-6">
-        <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Radicación de Propuesta</h2>
-        <p className="text-sm text-slate-500 mt-1">
+      {/* BANNER DINÁMICO: Google Drive */}
+      {convocatoria?.plantillas_url && (
+        <div className="bg-[#5B9BD5]/10 border border-[#5B9BD5]/30 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📂</span>
+            <div>
+              <h4 className="text-slate-800 font-bold text-sm">¿No tienes los formatos oficiales?</h4>
+              <p className="text-xs text-slate-500">Descarga y edita las plantillas requeridas en Drive antes de subir tu propuesta.</p>
+            </div>
+          </div>
+          <a
+            href={convocatoria.plantillas_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#5B9BD5] hover:bg-[#4a85b9] text-white font-bold text-xs uppercase tracking-wider px-4 py-2.5 rounded-lg transition-all shadow-sm flex items-center gap-2 shrink-0"
+          >
+            Descargar Plantillas
+            <span>➔</span>
+          </a>
+        </div>
+      )}
+
+      {/* Formulario de Radicación */}
+      <div>
+        <h3 className="text-lg font-bold text-slate-800 mb-1">Radicación de Propuesta</h3>
+        <p className="text-slate-400 text-xs mb-6">
           Sube la documentación reglamentaria requerida en formato PDF. SINFONI enlazará automáticamente tu perfil académico.
         </p>
-      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-              Código Único de Propuesta (Automático)
+        {mensaje.texto && (
+          <div className={`p-4 rounded-xl text-sm font-semibold mb-6 border ${
+            mensaje.tipo === 'success' 
+              ? 'bg-green-50 text-green-700 border-green-200' 
+              : 'bg-red-50 text-red-700 border-red-200'
+          }`}>
+            {mensaje.texto}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Código Único (Automático) */}
+            <div className="flex flex-col">
+              <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
+                Código Único de Propuesta (Automático)
+              </label>
+              <input
+                type="text"
+                value="SE GENERARÁ AL ENVIAR"
+                disabled
+                className="border border-slate-200 rounded-xl px-4 py-3 bg-slate-50 text-slate-400 font-semibold cursor-not-allowed text-sm"
+              />
+            </div>
+
+            {/* Sede de Vinculación */}
+            <div className="flex flex-col">
+              <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
+                Sede de Vinculación *
+              </label>
+              <select
+                name="sede_vinculacion"
+                value={formData.sede_vinculacion}
+                onChange={handleInputChange}
+                className="border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#5B9BD5] bg-white text-slate-700 font-medium text-sm transition-all"
+                required
+              >
+                <option value="">-- Seleccione una sede --</option>
+                {sedes.map((sede) => (
+                  <option key={sede} value={sede}>{sede}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Título de Propuesta */}
+          <div className="flex flex-col">
+            <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
+              Título de la Propuesta *
             </label>
-            <input 
+            <input
               type="text"
-              name="codigoPropuesta"
-              value={formData.codigoPropuesta}
-              readOnly
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none text-slate-700 font-mono font-bold text-sm cursor-not-allowed select-none"
+              name="titulo_propuesta"
+              value={formData.titulo_propuesta}
+              onChange={handleInputChange}
+              placeholder="Escriba el título de su investigación científica"
+              className="border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#5B9BD5] text-slate-700 font-medium text-sm"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-              Sede de Vinculación *
+          {/* Observaciones */}
+          <div className="flex flex-col">
+            <label className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">
+              Observaciones Iniciales
             </label>
-            <select
-              name="sede"
-              value={formData.sede}
+            <textarea
+              name="observaciones"
+              value={formData.observaciones}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/20 focus:border-[#5B9BD5] transition-all text-sm text-slate-700 font-medium"
-              required
-              disabled={cargandoSedes}
-            >
-              {cargandoSedes ? (
-                <option value="">Cargando sedes...</option>
-              ) : errorSedes ? (
-                <option value="">Error al cargar sedes</option>
-              ) : (
-                <>
-                  <option value="">-- Seleccione una sede --</option>
-                  {sedes.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre_sede}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
+              placeholder="Comentarios adicionales para el comité evaluador..."
+              rows="3"
+              className="border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-[#5B9BD5] text-slate-700 font-medium text-sm resize-none"
+            />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-            Título de la Propuesta *
-          </label>
-          <input 
-            type="text"
-            name="titulo_propuesta"
-            value={formData.titulo_propuesta}
-            onChange={handleInputChange}
-            placeholder="Escriba el título definitivo de su propuesta de investigación"
-            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/20 focus:border-[#5B9BD5] transition-all text-sm text-slate-700 placeholder:text-slate-400 font-medium"
-            required
-          />
-        </div>
+          {/* Carga de PDFs */}
+          <div className="bg-slate-50 border border-slate-100 p-6 rounded-2xl mt-6">
+            <h4 className="text-sm font-bold text-slate-600 mb-4 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center gap-2">
+              📂 Documentación Obligatoria (Formatos PDF)
+            </h4>
 
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-            Observaciones Iniciales
-          </label>
-          <textarea
-            name="observaciones"
-            rows="3"
-            placeholder="Comentarios o aclaraciones breves para los evaluadores..."
-            value={formData.observaciones}
-            onChange={handleInputChange}
-            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/20 focus:border-[#5B9BD5] transition-all text-sm text-slate-700 placeholder:text-slate-400 resize-none font-medium"
-          />
-        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* 1. Presupuesto */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
+                <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
+                  1. Presupuesto General *
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => handleFileChange(e, 'presupuesto')}
+                  className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#5B9BD5]/10 file:text-[#5B9BD5] hover:file:bg-[#5B9BD5]/20 cursor-pointer w-full"
+                  required
+                />
+                {archivos.presupuesto && (
+                  <span className="text-[11px] text-[#70AD47] mt-1.5 font-bold block">
+                    ✓ Listo: {archivos.presupuesto.name}
+                  </span>
+                )}
+              </div>
 
-        <div className="bg-slate-50/70 p-6 rounded-2xl border border-slate-100">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 border-b border-slate-200 pb-2">
-            Documentación Obligatoria (Formatos PDF)
-          </h3>
+              {/* 2. Cronograma */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
+                <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
+                  2. Cronograma de Actividades *
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => handleFileChange(e, 'cronograma')}
+                  className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#5B9BD5]/10 file:text-[#5B9BD5] hover:file:bg-[#5B9BD5]/20 cursor-pointer w-full"
+                  required
+                />
+                {archivos.cronograma && (
+                  <span className="text-[11px] text-[#70AD47] mt-1.5 font-bold block">
+                    ✓ Listo: {archivos.cronograma.name}
+                  </span>
+                )}
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <span className="font-bold text-slate-700 block mb-2">1. Presupuesto General *</span>
-              <input 
-                type="file" 
-                accept=".pdf" 
-                onChange={(e) => handleFileChange(e, 'presupuesto')} 
-                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
-                required 
-              />
-            </div>
+              {/* 3. Honestidad */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
+                <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
+                  3. Declaración de Honestidad *
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => handleFileChange(e, 'honestidad')}
+                  className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#5B9BD5]/10 file:text-[#5B9BD5] hover:file:bg-[#5B9BD5]/20 cursor-pointer w-full"
+                  required
+                />
+                {archivos.honestidad && (
+                  <span className="text-[11px] text-[#70AD47] mt-1.5 font-bold block">
+                    ✓ Listo: {archivos.honestidad.name}
+                  </span>
+                )}
+              </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <span className="font-bold text-slate-700 block mb-2">2. Cronograma de Actividades *</span>
-              <input 
-                type="file" 
-                accept=".pdf" 
-                onChange={(e) => handleFileChange(e, 'cronograma')} 
-                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
-                required 
-              />
-            </div>
+              {/* 4. Identidad */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#5B9BD5]/40 transition-all">
+                <label className="text-xs font-bold text-slate-500 mb-2 block uppercase">
+                  4. Soporte Documento Identidad *
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => handleFileChange(e, 'identidad')}
+                  className="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-[#5B9BD5]/10 file:text-[#5B9BD5] hover:file:bg-[#5B9BD5]/20 cursor-pointer w-full"
+                  required
+                />
+                {archivos.identidad && (
+                  <span className="text-[11px] text-[#70AD47] mt-1.5 font-bold block">
+                    ✓ Listo: {archivos.identidad.name}
+                  </span>
+                )}
+              </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <span className="font-bold text-slate-700 block mb-2">3. Declaración de Honestidad *</span>
-              <input 
-                type="file" 
-                accept=".pdf" 
-                onChange={(e) => handleFileChange(e, 'honestidad')} 
-                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
-                required 
-              />
-            </div>
-
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <span className="font-bold text-slate-700 block mb-2">4. Soporte Documento Identidad *</span>
-              <input 
-                type="file" 
-                accept=".pdf" 
-                onChange={(e) => handleFileChange(e, 'id')} 
-                className="w-full text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#5B9BD5] hover:file:bg-blue-100 cursor-pointer" 
-                required 
-              />
             </div>
           </div>
-        </div>
 
-        <button
-          type="submit"
-          disabled={enviando}
-          className="w-full py-3.5 bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-extrabold rounded-2xl shadow-md hover:opacity-95 transition-opacity uppercase tracking-wider text-xs mt-2 disabled:opacity-50"
-        >
-          {enviando ? 'Subiendo Documentos...' : 'Enviar Propuesta de Investigación'}
-        </button>
-      </form>
+          {/* Botón de Enviar */}
+          <button
+            type="submit"
+            disabled={cargando}
+            className={`w-full bg-gradient-to-r from-[#5B9BD5] to-[#70AD47] text-white font-bold py-4 px-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-base uppercase tracking-wider ${
+              cargando ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'
+            }`}
+          >
+            {cargando ? 'Enviando Propuesta...' : 'Enviar Propuesta de Investigación'}
+          </button>
+        </form>
+      </div>
     </div>
   );
-}
+};
 
 export default Convocatorias;
