@@ -11,31 +11,106 @@ const generarRadicadoRandom = (prefijo = 'SOL') => {
   return `${prefijo}-${resultado}`;
 };
 
-// Obtiene solicitudes generales (Admin ve todas, Docentes solo las suyas como medida de seguridad extra)
+// Obtener solicitudes generales (Filtra por rol automáticamente)
 const getSolicitudes = async (req, res) => {
   try {
-    const { id: logueadoId, rol } = req.user;
-    let solicitudes;
-
-    if (rol === 'Admin') {
-      solicitudes = await Solicitud.getAll();
-    } else {
-      solicitudes = await Solicitud.getByUserId(logueadoId);
+    if (!req.user) {
+      return res.status(401).json({ 
+        status: "error", 
+        message: "No autenticado. El middleware verificarToken no está enviando req.user." 
+      });
     }
 
-    res.status(200).json({ status: "success", data: solicitudes });
+    const logueadoId = req.user.id || req.user.usuario_id || req.user.id_usuario || req.user.userId;
+    const rolRaw = req.user.rol || req.user.role || req.user.id_rol || req.user.tipo || req.user.tipo_usuario;
+    const rol = String(rolRaw || '').trim().toLowerCase();
+    const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
+
+    // Si es Administrador, se le permite ver todas las solicitudes
+    if (esAdmin) {
+      const solicitudes = await Solicitud.getAll(); 
+      return res.status(200).json({ status: "success", data: solicitudes });
+    }
+
+    // Si es Docente, solo ve las suyas (Consulta blindada)
+    const query = `
+      SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
+             s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
+             u.nombre_completo AS profesor,
+             c.titulo AS convocatoria,
+             se.nombre AS Sede
+      FROM solicitudes s
+      LEFT JOIN usuarios u ON s.usuario_id = u.id
+      LEFT JOIN convocatorias c ON s.convocatoria_id = c.id
+      LEFT JOIN sedes se ON s.sede_id = se.id
+      WHERE s.usuario_id = ?
+      ORDER BY s.created_at DESC
+    `;
+
+    const [solicitudes] = await db.query(query, [logueadoId]);
+    return res.status(200).json({ status: "success", data: solicitudes });
+
   } catch (error) {
+    console.error("Error en getSolicitudes:", error);
     res.status(500).json({ status: "error", message: "Error al obtener las solicitudes", details: error.message });
   }
 };
 
-// Controlador específico para la vista "Mis Solicitudes" del Docente autenticado
+// Obtener las solicitudes propias (Garantiza que un docente NUNCA vea las de otros)
 const getMisSolicitudes = async (req, res) => {
   try {
-    const usuarioId = req.user.id; // Extraído de forma 100% segura desde el token JWT
-    const solicitudes = await Solicitud.getByUserId(usuarioId);
-    res.status(200).json({ status: "success", data: solicitudes });
+    if (!req.user) {
+      return res.status(401).json({ 
+        status: "error", 
+        message: "No autenticado. El middleware verificarToken no está enviando req.user." 
+      });
+    }
+
+    const logueadoId = req.user.id || req.user.usuario_id || req.user.id_usuario || req.user.userId;
+    const rolRaw = req.user.rol || req.user.role || req.user.id_rol || req.user.tipo || req.user.tipo_usuario;
+    const rol = String(rolRaw || '').trim().toLowerCase();
+    const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
+
+    let query;
+    let queryParams = [];
+
+    if (esAdmin) {
+      // Si es Admin, en esta vista también le permitimos ver todo
+      query = `
+        SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
+               s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
+               u.nombre_completo AS profesor,
+               c.titulo AS convocatoria,
+               se.nombre AS Sede
+        FROM solicitudes s
+        LEFT JOIN usuarios u ON s.usuario_id = u.id
+        LEFT JOIN convocatorias c ON s.convocatoria_id = c.id
+        LEFT JOIN sedes se ON s.sede_id = se.id
+        ORDER BY s.created_at DESC
+      `;
+    } else {
+      // Si es Docente, filtramos estrictamente por su usuario_id
+      query = `
+        SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
+               s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
+               u.nombre_completo AS profesor,
+               c.titulo AS convocatoria,
+               se.nombre AS Sede
+        FROM solicitudes s
+        LEFT JOIN usuarios u ON s.usuario_id = u.id
+        LEFT JOIN convocatorias c ON s.convocatoria_id = c.id
+        LEFT JOIN sedes se ON s.sede_id = se.id
+        WHERE s.usuario_id = ?
+        ORDER BY s.created_at DESC
+      `;
+      queryParams.push(logueadoId);
+    }
+
+    const [solicitudes] = await db.query(query, queryParams);
+    return res.status(200).json({ status: "success", data: solicitudes });
+
   } catch (error) {
+    console.error("Error en getMisSolicitudes:", error);
     res.status(500).json({ status: "error", message: "Error al obtener tus solicitudes", details: error.message });
   }
 };
@@ -43,15 +118,20 @@ const getMisSolicitudes = async (req, res) => {
 const getSolicitudById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id: logueadoId, rol } = req.user;
+    const logueadoId = req.user?.id || req.user?.usuario_id || req.user?.id_usuario;
+    const rolRaw = req.user?.rol || req.user?.role || req.user?.id_rol || req.user?.tipo;
+    const rol = String(rolRaw || '').trim().toLowerCase();
 
     const solicitud = await Solicitud.getById(id);
     if (!solicitud) {
       return res.status(404).json({ status: "error", message: "Solicitud no encontrada" });
     }
 
-    // Restricción de Privacidad: Solo el creador de la solicitud o el Admin pueden verla en detalle
-    if (rol !== 'Admin' && solicitud.usuario_id !== logueadoId) {
+    const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
+    const esDuenio = String(solicitud.usuario_id) === String(logueadoId);
+
+    // Seguridad estricta: si no es admin y no es el dueño, se bloquea el acceso
+    if (!esAdmin && !esDuenio) {
       return res.status(403).json({ status: "error", message: "Acceso denegado: No tienes permiso para ver esta solicitud" });
     }
 
@@ -63,12 +143,14 @@ const getSolicitudById = async (req, res) => {
 
 const createSolicitud = async (req, res) => {
   try {
-    // El usuario_id se toma directamente del token verificado para evitar suplantación de identidad
-    let usuario_id = req.user.id;
+    let usuario_id = req.user?.id || req.user?.usuario_id || req.user?.id_usuario;
+    const rolRaw = req.user?.rol || req.user?.role || req.user?.id_rol || req.user?.tipo;
+    const rol = String(rolRaw || '').trim().toLowerCase();
+    const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
 
-    // Si el usuario es Admin, permitimos que asigne opcionalmente la solicitud a otro id de usuario enviado en el body
-    if (req.user.rol === 'Admin' && req.body.usuario_id) {
-      usuario_id = parseInt(req.body.usuario_id);
+    // Solo un administrador puede registrar una solicitud a nombre de otro id_usuario
+    if (esAdmin && req.body.usuario_id) {
+      usuario_id = req.body.usuario_id;
     }
 
     let { 
@@ -81,10 +163,9 @@ const createSolicitud = async (req, res) => {
       sede_vinculacion 
     } = req.body;
 
-    // Resolución dinámica de sede_id
     if (!sede_id && sede_vinculacion) {
       try {
-        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre_sede = ?', [sede_vinculacion]);
+        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
         if (rows && rows.length > 0) {
           sede_id = rows[0].id;
         }
@@ -101,7 +182,7 @@ const createSolicitud = async (req, res) => {
     if (!usuario_id || !convocatoria_id || !sede_id || !titulo_propuesta) {
       return res.status(400).json({ 
         status: "error", 
-        message: "Los campos de convocatoria, sede (o sede_vinculacion) y título de propuesta son obligatorios" 
+        message: "Los campos usuario_id, convocatoria_id, sede_id (o sede_vinculacion) y titulo_propuesta son obligatorios" 
       });
     }
 
@@ -179,22 +260,26 @@ const createSolicitud = async (req, res) => {
 const updateSolicitud = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id: logueadoId, rol } = req.user;
+    const logueadoId = req.user?.id || req.user?.usuario_id || req.user?.id_usuario;
+    const rolRaw = req.user?.rol || req.user?.role || req.user?.id_rol || req.user?.tipo;
+    const rol = String(rolRaw || '').trim().toLowerCase();
 
     const solicitudPrevia = await Solicitud.getById(id);
     if (!solicitudPrevia) {
       return res.status(404).json({ status: "error", message: "Solicitud no encontrada para actualizar" });
     }
 
-    // Restricción de Privacidad: Solo el creador original o el Admin pueden editar la solicitud
-    if (rol !== 'Admin' && solicitudPrevia.usuario_id !== logueadoId) {
+    const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
+    const esDuenio = String(solicitudPrevia.usuario_id) === String(logueadoId);
+
+    // Seguridad de propiedad: Solo el dueño o un admin pueden modificar la solicitud
+    if (!esAdmin && !esDuenio) {
       return res.status(403).json({ status: "error", message: "Acceso denegado: No puedes modificar una propuesta ajena" });
     }
 
-    // Bloqueamos la modificación del propietario. El propietario se mantiene a no ser que el Admin diga lo contrario.
     let usuario_id = solicitudPrevia.usuario_id;
-    if (rol === 'Admin' && req.body.usuario_id) {
-      usuario_id = parseInt(req.body.usuario_id);
+    if (esAdmin && req.body.usuario_id) {
+      usuario_id = req.body.usuario_id;
     }
 
     let { 
@@ -211,7 +296,7 @@ const updateSolicitud = async (req, res) => {
 
     if (!sede_id && sede_vinculacion) {
       try {
-        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre_sede = ?', [sede_vinculacion]);
+        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
         if (rows && rows.length > 0) {
           sede_id = rows[0].id;
         }
@@ -308,15 +393,20 @@ const updateSolicitud = async (req, res) => {
 const deleteSolicitud = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id: logueadoId, rol } = req.user;
+    const logueadoId = req.user?.id || req.user?.usuario_id || req.user?.id_usuario;
+    const rolRaw = req.user?.rol || req.user?.role || req.user?.id_rol || req.user?.tipo;
+    const rol = String(rolRaw || '').trim().toLowerCase();
 
     const solicitudPrevia = await Solicitud.getById(id);
     if (!solicitudPrevia) {
       return res.status(404).json({ status: "error", message: "Solicitud no encontrada para eliminar" });
     }
 
-    // Restricción de Privacidad: Solo el dueño de la solicitud o el Admin pueden eliminarla
-    if (rol !== 'Admin' && solicitudPrevia.usuario_id !== logueadoId) {
+    const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
+    const esDuenio = String(solicitudPrevia.usuario_id) === String(logueadoId);
+
+    // Seguridad de propiedad: Solo el dueño o el administrador pueden eliminar
+    if (!esAdmin && !esDuenio) {
       return res.status(403).json({ status: "error", message: "Acceso denegado: No tienes permisos para eliminar esta solicitud" });
     }
 

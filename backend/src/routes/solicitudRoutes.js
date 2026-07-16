@@ -14,7 +14,7 @@ const uploadFields = upload.fields([
 
 // --- RUTAS PROTEGIDAS Y DE CONTROL DE ROLES ---
 
-// Obtener solicitudes (Si es Admin ve todas, si es Docente solo las suyas para mayor privacidad)
+// Obtener solicitudes (Si es Admin ve todas, si es Docente solo las suyas)
 router.get('/', verificarToken, solicitudController.getSolicitudes);
 
 // Obtener las solicitudes del profesor autenticado (Ruta específica indispensable)
