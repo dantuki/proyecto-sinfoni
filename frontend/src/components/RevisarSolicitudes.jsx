@@ -3,6 +3,184 @@ import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api';
 
+// Subcomponente premium para manejar el estado independiente de cada solicitud en la tabla
+function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEstado }) {
+  const [nuevoEstado, setNuevoEstado] = useState(sol.estado);
+  const [motivo, setMotivo] = useState(sol.motivo_decision || '');
+  const [mostrarMotivoInput, setMostrarMotivoInput] = useState(sol.estado === 'Rechazado');
+  const [enviando, setEnviando] = useState(false);
+
+  // Sincronizar el componente hijo con nuevas cargas desde la base de datos
+  useEffect(() => {
+    setNuevoEstado(sol.estado);
+    setMotivo(sol.motivo_decision || '');
+    setMostrarMotivoInput(sol.estado === 'Rechazado');
+  }, [sol]);
+
+  const handleEstadoChange = async (e) => {
+    const estadoSeleccionado = e.target.value;
+    setNuevoEstado(estadoSeleccionado);
+    
+    if (estadoSeleccionado === 'Rechazado') {
+      setMostrarMotivoInput(true);
+    } else {
+      setMostrarMotivoInput(false);
+      // Actualizamos automáticamente si el nuevo estado no es un Rechazo
+      await guardarCambioEstado(estadoSeleccionado, null);
+    }
+  };
+
+  const guardarCambioEstado = async (estadoDestino, motivoTexto) => {
+    setEnviando(true);
+    try {
+      const token = localStorage.getItem('token');
+      const respuesta = await axios.put(`${API_BASE}/postulaciones/${sol.id}/estado`, {
+        estado: estadoDestino,
+        motivo_decision: estadoDestino === 'Rechazado' ? motivoTexto : null
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (respuesta.data.status === 'success') {
+        onActualizarEstado(sol.id, estadoDestino, estadoDestino === 'Rechazado' ? motivoTexto : null);
+        if (estadoDestino !== 'Rechazado') {
+          alert("Estado actualizado correctamente.");
+        } else {
+          alert("Propuesta rechazada con éxito.");
+        }
+      } else {
+        alert("No se pudo actualizar el estado de la propuesta.");
+      }
+    } catch (err) {
+      console.error("Error al actualizar estado:", err);
+      alert(err.response?.data?.message || "Ocurrió un error al actualizar el estado.");
+      // En caso de error de red o servidor, revertimos al estado original
+      setNuevoEstado(sol.estado);
+      setMostrarMotivoInput(sol.estado === 'Rechazado');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  const handleConfirmarRechazo = async () => {
+    if (!motivo.trim()) {
+      alert("Error: Para rechazar una propuesta debes escribir obligatoriamente el motivo.");
+      return;
+    }
+    await guardarCambioEstado('Rechazado', motivo);
+  };
+
+  return (
+    <tr className="hover:bg-slate-50/40 transition-colors group">
+      <td className="py-5 px-6 max-w-xs">
+        <span className="inline-block px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200/50 mb-1.5">
+          {sol.codigoPropuesta}
+        </span>
+        <h3 className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-[#5B9BD5] transition-colors">
+          {sol.titulo_propuesta}
+        </h3>
+        {sol.observaciones && (
+          <p className="text-[11px] text-slate-400 mt-1 italic line-clamp-1">
+            Nota: "{sol.observaciones}"
+          </p>
+        )}
+        {/* Mostrar permanentemente el motivo si la propuesta ya está rechazada y tiene feedback */}
+        {sol.estado === 'Rechazado' && sol.motivo_decision && !mostrarMotivoInput && (
+          <div className="mt-2 p-2 bg-red-50/60 border border-red-100/50 rounded-xl text-[11px] text-red-700 leading-relaxed">
+            <strong>Motivo registrado:</strong> {sol.motivo_decision}
+          </div>
+        )}
+      </td>
+
+      <td className="py-5 px-6">
+        <div className="font-semibold text-slate-800">{sol.docente_nombre || 'Docente Asociado'}</div>
+        <div className="text-xs text-slate-500 mt-0.5">{sol.docente_correo || 'Correo no especificado'}</div>
+        <div className="inline-flex items-center gap-1 mt-1.5 text-xs font-medium text-slate-500 bg-slate-100/60 px-2 py-0.5 rounded-md border border-slate-200/40">
+          📍 {sol.nombre_sede || `Sede (ID: ${sol.sede})`}
+        </div>
+      </td>
+
+      <td className="py-5 px-6">
+        <div className="grid grid-cols-2 gap-1.5 max-w-[280px]">
+          <button
+            onClick={() => descargarDocumento(sol.presupuesto)}
+            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
+            title="Presupuesto"
+          >
+            📋 Presupuesto
+          </button>
+          <button
+            onClick={() => descargarDocumento(sol.cronograma)}
+            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
+            title="Cronograma"
+          >
+            📅 Cronograma
+          </button>
+          <button
+            onClick={() => descargarDocumento(sol.honestidad)}
+            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
+            title="Declaración de Honestidad"
+          >
+            ✍️ Honestidad
+          </button>
+          <button
+            onClick={() => descargarDocumento(sol.id_documento)}
+            className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
+            title="Soporte de Identidad"
+          >
+            🪪 Identidad
+          </button>
+        </div>
+      </td>
+
+      <td className="py-5 px-6">
+        <div className="flex flex-col gap-2 min-w-[170px]">
+          <select
+            value={nuevoEstado}
+            onChange={handleEstadoChange}
+            disabled={enviando}
+            className={`w-full px-3 py-1.5 rounded-xl text-xs font-bold border focus:outline-none transition-all cursor-pointer ${getBadgeStyles(nuevoEstado)}`}
+          >
+            <option value="Radicado">📁 Radicado</option>
+            <option value="En Evaluación">🔍 En Evaluación</option>
+            <option value="Aprobado">✅ Aprobado</option>
+            <option value="Rechazado">❌ Rechazado</option>
+          </select>
+
+          {/* Formulario Inline Condicional para exigir la justificación */}
+          {mostrarMotivoInput && (
+            <div className="bg-red-50/50 border border-red-100 p-3 rounded-xl space-y-2 mt-1">
+              <label className="block text-[9px] uppercase font-extrabold text-red-700 tracking-wider">
+                Motivo de Rechazo Obligatorio *
+              </label>
+              <textarea
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                placeholder="Especifica el por qué..."
+                rows="2"
+                disabled={enviando}
+                className="w-full p-2 border border-red-200 rounded-lg text-[11px] focus:ring-2 focus:ring-red-200 outline-none resize-none bg-white text-slate-700"
+                required
+              />
+              <button
+                onClick={handleConfirmarRechazo}
+                disabled={enviando}
+                className="w-full py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                {enviando ? 'Guardando...' : 'Confirmar Rechazo'}
+              </button>
+            </div>
+          )}
+
+          <span className="text-[10px] text-slate-400 text-center font-medium">
+            Registrado: {sol.fecha_radicacion ? new Date(sol.fecha_radicacion).toLocaleDateString() : 'Recientemente'}
+          </span>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 function RevisarSolicitudes({ usuario }) {
   const [solicitudes, setSolicitudes] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -48,25 +226,11 @@ function RevisarSolicitudes({ usuario }) {
     window.open(urlCompleta, '_blank');
   };
 
-  const handleCambiarEstado = async (id, nuevoEstado) => {
-    try {
-      const token = localStorage.getItem('token');
-      const respuesta = await axios.put(`${API_BASE}/postulaciones/${id}/estado`, 
-        { estado: nuevoEstado },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (respuesta.data.status === 'success') {
-        setSolicitudes(prev => 
-          prev.map(sol => sol.id === id ? { ...sol, estado: nuevoEstado } : sol)
-        );
-      } else {
-        alert("No se pudo actualizar el estado de la propuesta.");
-      }
-    } catch (err) {
-      console.error("Error al actualizar estado:", err);
-      alert(err.response?.data?.message || "Ocurrió un error al actualizar el estado en el servidor.");
-    }
+  // Función callback para sincronizar la actualización del estado de una fila con el estado de la lista global
+  const handleActualizarEstadoLocal = (id, nuevoEstado, motivoDecision) => {
+    setSolicitudes(prev => 
+      prev.map(sol => sol.id === id ? { ...sol, estado: nuevoEstado, motivo_decision: motivoDecision } : sol)
+    );
   };
 
   const solicitudesFiltradas = solicitudes.filter(sol => {
@@ -80,7 +244,6 @@ function RevisarSolicitudes({ usuario }) {
     return coincideTexto && coincideEstado;
   });
 
-  // Estilos visuales sincronizados con los estados de tu MySQL ENUM
   const getBadgeStyles = (estado) => {
     switch (estado) {
       case 'Aprobado':
@@ -180,80 +343,13 @@ function RevisarSolicitudes({ usuario }) {
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
                 {solicitudesFiltradas.map((sol) => (
-                  <tr key={sol.id} className="hover:bg-slate-50/40 transition-colors group">
-                    <td className="py-5 px-6 max-w-xs">
-                      <span className="inline-block px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200/50 mb-1.5">
-                        {sol.codigoPropuesta}
-                      </span>
-                      <h3 className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-[#5B9BD5] transition-colors">
-                        {sol.titulo_propuesta}
-                      </h3>
-                      {sol.observaciones && (
-                        <p className="text-[11px] text-slate-400 mt-1 italic line-clamp-1">
-                          Nota: "{sol.observaciones}"
-                        </p>
-                      )}
-                    </td>
-
-                    <td className="py-5 px-6">
-                      <div className="font-semibold text-slate-800">{sol.docente_nombre || 'Docente Asociado'}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">{sol.docente_correo || 'Correo no especificado'}</div>
-                      <div className="inline-flex items-center gap-1 mt-1.5 text-xs font-medium text-slate-500 bg-slate-100/60 px-2 py-0.5 rounded-md border border-slate-200/40">
-                        📍 {sol.nombre_sede || `Sede (ID: ${sol.sede})`}
-                      </div>
-                    </td>
-
-                    <td className="py-5 px-6">
-                      <div className="grid grid-cols-2 gap-1.5 max-w-[280px]">
-                        <button
-                          onClick={() => descargarDocumento(sol.presupuesto)}
-                          className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
-                          title="Presupuesto"
-                        >
-                          📋 Presupuesto
-                        </button>
-                        <button
-                          onClick={() => descargarDocumento(sol.cronograma)}
-                          className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
-                          title="Cronograma"
-                        >
-                          📅 Cronograma
-                        </button>
-                        <button
-                          onClick={() => descargarDocumento(sol.honestidad)}
-                          className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
-                          title="Declaración de Honestidad"
-                        >
-                          ✍️ Honestidad
-                        </button>
-                        <button
-                          onClick={() => descargarDocumento(sol.id_documento)}
-                          className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-[#5B9BD5] border border-slate-200/60 transition-colors flex items-center justify-center gap-1"
-                          title="Soporte de Identidad"
-                        >
-                          🪪 Identidad
-                        </button>
-                      </div>
-                    </td>
-
-                    <td className="py-5 px-6">
-                      <div className="flex flex-col gap-2">
-                        <select
-                          value={sol.estado}
-                          onChange={(e) => handleCambiarEstado(sol.id, e.target.value)}
-                          className={`w-full px-3 py-1.5 rounded-xl text-xs font-bold border focus:outline-none transition-all cursor-pointer ${getBadgeStyles(sol.estado)}`}
-                        >
-                          <option value="Radicado">📁 Radicado</option>
-                          <option value="En Evaluación">🔍 En Evaluación</option>
-                          <option value="Aprobado">✅ Aprobado</option>
-                          <option value="Rechazado">❌ Rechazado</option>
-                        </select>
-                        <span className="text-[10px] text-slate-400 text-center font-medium">
-                          Registrado: {sol.fecha_radicacion ? new Date(sol.fecha_radicacion).toLocaleDateString() : 'Recientemente'}
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
+                  <FilaSolicitud
+                    key={sol.id}
+                    sol={sol}
+                    descargarDocumento={descargarDocumento}
+                    getBadgeStyles={getBadgeStyles}
+                    onActualizarEstado={handleActualizarEstadoLocal}
+                  />
                 ))}
               </tbody>
             </table>
