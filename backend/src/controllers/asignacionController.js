@@ -1,6 +1,6 @@
 const Asignacion = require('../models/asignacionModel');
 
-// 1. GET General (Listar)
+// 1. GET General (Listar todas)
 const getAsignaciones = async (req, res) => {
     try {
         const asignaciones = await Asignacion.getAll();
@@ -23,7 +23,18 @@ const getAsignacionById = async (req, res) => {
     }
 };
 
-// 3. POST (Agregar)
+// 3. GET Asignaciones por Evaluador
+const getAsignacionesByEvaluador = async (req, res) => {
+    try {
+        const { evaluadorId } = req.params;
+        const asignaciones = await Asignacion.getByEvaluadorId(evaluadorId);
+        res.status(200).json({ status: "success", data: asignaciones });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+};
+
+// 4. POST (Agregar / Crear Asignación)
 const asignarEvaluador = async (req, res) => {
     try {
         const id = await Asignacion.create(req.body);
@@ -33,7 +44,7 @@ const asignarEvaluador = async (req, res) => {
     }
 };
 
-// 4. PUT (Calificar)
+// 5. PUT (Calificar)
 const calificar = async (req, res) => {
     try {
         const affectedRows = await Asignacion.updateEvaluacion(req.params.id, req.body);
@@ -46,7 +57,7 @@ const calificar = async (req, res) => {
     }
 };
 
-// 5. DELETE (Borrar)
+// 6. DELETE (Borrar)
 const deleteAsignacion = async (req, res) => {
     try {
         const affectedRows = await Asignacion.delete(req.params.id);
@@ -62,6 +73,7 @@ const deleteAsignacion = async (req, res) => {
 module.exports = { 
     getAsignaciones, 
     getAsignacionById, 
+    getAsignacionesByEvaluador,
     asignarEvaluador, 
     calificar, 
     deleteAsignacion 
