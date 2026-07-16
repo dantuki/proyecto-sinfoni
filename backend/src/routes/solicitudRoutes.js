@@ -12,11 +12,19 @@ const uploadFields = upload.fields([
   { name: 'identidad', maxCount: 1 }
 ]);
 
-// Rutas Públicas o de Lectura
-router.get('/', solicitudController.getSolicitudes);
-router.get('/:id', solicitudController.getSolicitudById);
+// --- RUTAS PROTEGIDAS Y DE CONTROL DE ROLES ---
 
-// Rutas Protegidas con Subida de Archivos Específicos
+// Obtener solicitudes (Si es Admin ve todas, si es Docente solo las suyas para mayor privacidad)
+router.get('/', verificarToken, solicitudController.getSolicitudes);
+
+// Obtener las solicitudes del profesor autenticado (Ruta específica indispensable)
+// IMPORTANTE: Debe ir antes de /:id para evitar que "mis-solicitudes" sea capturado como un parámetro de ID
+router.get('/mis-solicitudes', verificarToken, solicitudController.getMisSolicitudes);
+
+// Obtener una solicitud específica por ID (Protegido por token y validación de propiedad)
+router.get('/:id', verificarToken, solicitudController.getSolicitudById);
+
+// Rutas de Creación, Modificación y Eliminación con validación estricta de pertenencia
 router.post('/', verificarToken, uploadFields, solicitudController.createSolicitud);
 router.put('/:id', verificarToken, uploadFields, solicitudController.updateSolicitud);
 router.delete('/:id', verificarToken, solicitudController.deleteSolicitud);

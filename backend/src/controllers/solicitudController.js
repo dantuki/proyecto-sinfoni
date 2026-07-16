@@ -11,22 +11,50 @@ const generarRadicadoRandom = (prefijo = 'SOL') => {
   return `${prefijo}-${resultado}`;
 };
 
+// Obtiene solicitudes generales (Admin ve todas, Docentes solo las suyas como medida de seguridad extra)
 const getSolicitudes = async (req, res) => {
   try {
-    const solicitudes = await Solicitud.getAll(); 
+    const { id: logueadoId, rol } = req.user;
+    let solicitudes;
+
+    if (rol === 'Admin') {
+      solicitudes = await Solicitud.getAll();
+    } else {
+      solicitudes = await Solicitud.getByUserId(logueadoId);
+    }
+
     res.status(200).json({ status: "success", data: solicitudes });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Error al obtener las solicitudes", details: error.message });
   }
 };
 
+// Controlador específico para la vista "Mis Solicitudes" del Docente autenticado
+const getMisSolicitudes = async (req, res) => {
+  try {
+    const usuarioId = req.user.id; // Extraído de forma 100% segura desde el token JWT
+    const solicitudes = await Solicitud.getByUserId(usuarioId);
+    res.status(200).json({ status: "success", data: solicitudes });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: "Error al obtener tus solicitudes", details: error.message });
+  }
+};
+
 const getSolicitudById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { id: logueadoId, rol } = req.user;
+
     const solicitud = await Solicitud.getById(id);
     if (!solicitud) {
       return res.status(404).json({ status: "error", message: "Solicitud no encontrada" });
     }
+
+    // Restricción de Privacidad: Solo el creador de la solicitud o el Admin pueden verla en detalle
+    if (rol !== 'Admin' && solicitud.usuario_id !== logueadoId) {
+      return res.status(403).json({ status: "error", message: "Acceso denegado: No tienes permiso para ver esta solicitud" });
+    }
+
     res.status(200).json({ status: "success", data: solicitud });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Error al obtener la solicitud", details: error.message });
@@ -35,8 +63,15 @@ const getSolicitudById = async (req, res) => {
 
 const createSolicitud = async (req, res) => {
   try {
+    // El usuario_id se toma directamente del token verificado para evitar suplantación de identidad
+    let usuario_id = req.user.id;
+
+    // Si el usuario es Admin, permitimos que asigne opcionalmente la solicitud a otro id de usuario enviado en el body
+    if (req.user.rol === 'Admin' && req.body.usuario_id) {
+      usuario_id = parseInt(req.body.usuario_id);
+    }
+
     let { 
-      usuario_id, 
       convocatoria_id, 
       sede_id, 
       num_solicitud, 
@@ -49,7 +84,7 @@ const createSolicitud = async (req, res) => {
     // Resolución dinámica de sede_id
     if (!sede_id && sede_vinculacion) {
       try {
-        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
+        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre_sede = ?', [sede_vinculacion]);
         if (rows && rows.length > 0) {
           sede_id = rows[0].id;
         }
@@ -66,7 +101,7 @@ const createSolicitud = async (req, res) => {
     if (!usuario_id || !convocatoria_id || !sede_id || !titulo_propuesta) {
       return res.status(400).json({ 
         status: "error", 
-        message: "Los campos usuario_id, convocatoria_id, sede_id (o sede_vinculacion) y titulo_propuesta son obligatorios" 
+        message: "Los campos de convocatoria, sede (o sede_vinculacion) y título de propuesta son obligatorios" 
       });
     }
 
@@ -78,7 +113,6 @@ const createSolicitud = async (req, res) => {
 
     const estadoInicial = estado || 'Borrador';
 
-    // Capturar las URLs individuales de los archivos para guardarlos en la tabla 'solicitudes'
     const urlPresupuesto = req.files && req.files['presupuesto'] ? '/uploads/' + req.files['presupuesto'][0].filename : null;
     const urlCronograma = req.files && req.files['cronograma'] ? '/uploads/' + req.files['cronograma'][0].filename : null;
     const urlHonestidad = req.files && req.files['honestidad'] ? '/uploads/' + req.files['honestidad'][0].filename : null;
@@ -98,7 +132,6 @@ const createSolicitud = async (req, res) => {
       id_url: urlIdentidad
     });
 
-    // Mapeo con nombres limpios y cortos para evitar el error de truncado (longitud o ENUM)
     const filesToUpload = [];
     if (req.files) {
       if (req.files['presupuesto'] && req.files['presupuesto'][0]) {
@@ -146,8 +179,25 @@ const createSolicitud = async (req, res) => {
 const updateSolicitud = async (req, res) => {
   try {
     const { id } = req.params;
+    const { id: logueadoId, rol } = req.user;
+
+    const solicitudPrevia = await Solicitud.getById(id);
+    if (!solicitudPrevia) {
+      return res.status(404).json({ status: "error", message: "Solicitud no encontrada para actualizar" });
+    }
+
+    // Restricción de Privacidad: Solo el creador original o el Admin pueden editar la solicitud
+    if (rol !== 'Admin' && solicitudPrevia.usuario_id !== logueadoId) {
+      return res.status(403).json({ status: "error", message: "Acceso denegado: No puedes modificar una propuesta ajena" });
+    }
+
+    // Bloqueamos la modificación del propietario. El propietario se mantiene a no ser que el Admin diga lo contrario.
+    let usuario_id = solicitudPrevia.usuario_id;
+    if (rol === 'Admin' && req.body.usuario_id) {
+      usuario_id = parseInt(req.body.usuario_id);
+    }
+
     let { 
-      usuario_id, 
       convocatoria_id, 
       sede_id, 
       num_solicitud, 
@@ -161,7 +211,7 @@ const updateSolicitud = async (req, res) => {
 
     if (!sede_id && sede_vinculacion) {
       try {
-        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
+        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre_sede = ?', [sede_vinculacion]);
         if (rows && rows.length > 0) {
           sede_id = rows[0].id;
         }
@@ -175,13 +225,8 @@ const updateSolicitud = async (req, res) => {
       }
     }
 
-    if (!usuario_id || !convocatoria_id || !sede_id || !estado || !titulo_propuesta) {
+    if (!convocatoria_id || !sede_id || !estado || !titulo_propuesta) {
       return res.status(400).json({ status: "error", message: "Todos los campos principales son requeridos para actualizar" });
-    }
-
-    const solicitudPrevia = await Solicitud.getById(id);
-    if (!solicitudPrevia) {
-      return res.status(404).json({ status: "error", message: "Solicitud no encontrada para actualizar" });
     }
 
     if (!num_solicitud || num_solicitud.trim() === "") {
@@ -190,7 +235,6 @@ const updateSolicitud = async (req, res) => {
       num_solicitud = num_solicitud.trim().toUpperCase();
     }
 
-    // Mantener las URLs previas si no se suben archivos nuevos en el update
     const urlPresupuesto = req.files && req.files['presupuesto'] ? '/uploads/' + req.files['presupuesto'][0].filename : solicitudPrevia.presupuesto_url;
     const urlCronograma = req.files && req.files['cronograma'] ? '/uploads/' + req.files['cronograma'][0].filename : solicitudPrevia.cronograma_url;
     const urlHonestidad = req.files && req.files['honestidad'] ? '/uploads/' + req.files['honestidad'][0].filename : solicitudPrevia.honestidad_url;
@@ -247,7 +291,7 @@ const updateSolicitud = async (req, res) => {
       if (solicitudPrevia.estado !== estado) {
         await Trazabilidad.registrarCambio({
           solicitud_id: id,
-          usuario_id: usuario_id,
+          usuario_id: logueadoId,
           estado_anterior: solicitudPrevia.estado,
           estado_nuevo: estado,
           motivo_cambio: motivo_cambio || "Actualización o transición de estado de la propuesta con anexos."
@@ -264,14 +308,30 @@ const updateSolicitud = async (req, res) => {
 const deleteSolicitud = async (req, res) => {
   try {
     const { id } = req.params;
-    const affectedRows = await Solicitud.delete(id);
-    if (affectedRows === 0) {
+    const { id: logueadoId, rol } = req.user;
+
+    const solicitudPrevia = await Solicitud.getById(id);
+    if (!solicitudPrevia) {
       return res.status(404).json({ status: "error", message: "Solicitud no encontrada para eliminar" });
     }
+
+    // Restricción de Privacidad: Solo el dueño de la solicitud o el Admin pueden eliminarla
+    if (rol !== 'Admin' && solicitudPrevia.usuario_id !== logueadoId) {
+      return res.status(403).json({ status: "error", message: "Acceso denegado: No tienes permisos para eliminar esta solicitud" });
+    }
+
+    await Solicitud.delete(id);
     res.status(200).json({ status: "success", message: "Solicitud eliminada correctamente" });
   } catch (error) {
     res.status(500).json({ status: "error", message: "Error al eliminar la solicitud", details: error.message });
   }
 };
 
-module.exports = { getSolicitudes, getSolicitudById, createSolicitud, updateSolicitud, deleteSolicitud };
+module.exports = { 
+  getSolicitudes, 
+  getMisSolicitudes, 
+  getSolicitudById, 
+  createSolicitud, 
+  updateSolicitud, 
+  deleteSolicitud 
+};

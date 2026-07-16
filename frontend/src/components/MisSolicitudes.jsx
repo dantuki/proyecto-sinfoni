@@ -129,7 +129,6 @@ function MisSolicitudes() {
                   )}
                 </div>
 
-                {/* Retroalimentación Administrativa si el Administrador dio un veredicto */}
                 {sol.motivo_decision && (
                   <div className={`p-4 rounded-xl border text-xs leading-relaxed ${
                     sol.estado === 'Aprobado' 
@@ -144,14 +143,13 @@ function MisSolicitudes() {
                 )}
               </div>
 
-              {/* Enlaces a los documentos cargados directamente en el servidor */}
               <div className="flex flex-col justify-center gap-2.5 bg-slate-50/50 p-4 rounded-xl border border-slate-100 md:w-56 shrink-0 text-left">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block border-b border-slate-200 pb-1.5 mb-1">
                   Documentación Anexa
                 </span>
                 
                 <a 
-                  href={`http://localhost:5000/${sol.presupuesto_url}`} 
+                  href={`http://localhost:5000${sol.presupuesto_url}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
@@ -160,7 +158,7 @@ function MisSolicitudes() {
                 </a>
 
                 <a 
-                  href={`http://localhost:5000/${sol.cronograma_url}`} 
+                  href={`http://localhost:5000${sol.cronograma_url}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
@@ -169,7 +167,7 @@ function MisSolicitudes() {
                 </a>
 
                 <a 
-                  href={`http://localhost:5000/${sol.honestidad_url}`} 
+                  href={`http://localhost:5000${sol.honestidad_url}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
@@ -178,7 +176,7 @@ function MisSolicitudes() {
                 </a>
 
                 <a 
-                  href={`http://localhost:5000/${sol.id_url}`} 
+                  href={`http://localhost:5000${sol.id_url}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-xs text-slate-600 hover:text-[#5B9BD5] font-semibold flex items-center gap-2 transition-colors"
