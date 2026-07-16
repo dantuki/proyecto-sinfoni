@@ -43,11 +43,10 @@ const createSolicitud = async (req, res) => {
       titulo_propuesta, 
       observaciones, 
       estado, 
-      tipos_documentos,
       sede_vinculacion 
     } = req.body;
 
-    // Resolución dinámica de sede_id si se envía por nombre de vinculación desde el front
+    // Resolución dinámica de sede_id
     if (!sede_id && sede_vinculacion) {
       try {
         const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
@@ -55,7 +54,6 @@ const createSolicitud = async (req, res) => {
           sede_id = rows[0].id;
         }
       } catch (err) {
-        // Fallback alfabético por ID en caso de que falle la consulta directa
         const sedesMap = {
           "Apartadó": 1, "Arauca": 2, "Barrancabermeja": 3, "Bogotá": 4, "Bucaramanga": 5,
           "Cali": 6, "Cartago": 7, "El Espinal": 8, "Ibagué": 9, "Medellín": 10, "Montería": 11,
@@ -80,6 +78,12 @@ const createSolicitud = async (req, res) => {
 
     const estadoInicial = estado || 'Borrador';
 
+    // Capturar las URLs individuales de los archivos para guardarlos en la tabla 'solicitudes'
+    const urlPresupuesto = req.files && req.files['presupuesto'] ? '/uploads/' + req.files['presupuesto'][0].filename : null;
+    const urlCronograma = req.files && req.files['cronograma'] ? '/uploads/' + req.files['cronograma'][0].filename : null;
+    const urlHonestidad = req.files && req.files['honestidad'] ? '/uploads/' + req.files['honestidad'][0].filename : null;
+    const urlIdentidad = req.files && req.files['identidad'] ? '/uploads/' + req.files['identidad'][0].filename : null;
+
     const newId = await Solicitud.create({ 
       usuario_id, 
       convocatoria_id, 
@@ -87,23 +91,27 @@ const createSolicitud = async (req, res) => {
       num_solicitud, 
       titulo_propuesta,
       observaciones, 
-      estado: estadoInicial
+      estado: estadoInicial,
+      presupuesto_url: urlPresupuesto,
+      cronograma_url: urlCronograma,
+      honestidad_url: urlHonestidad,
+      id_url: urlIdentidad
     });
 
-    // Procesamiento de los archivos subidos por campos específicos
+    // Mapeo con nombres limpios y cortos para evitar el error de truncado (longitud o ENUM)
     const filesToUpload = [];
     if (req.files) {
       if (req.files['presupuesto'] && req.files['presupuesto'][0]) {
-        filesToUpload.push({ file: req.files['presupuesto'][0], tipo: 'Presupuesto General' });
+        filesToUpload.push({ file: req.files['presupuesto'][0], tipo: 'Presupuesto' });
       }
       if (req.files['cronograma'] && req.files['cronograma'][0]) {
-        filesToUpload.push({ file: req.files['cronograma'][0], tipo: 'Cronograma de Actividades' });
+        filesToUpload.push({ file: req.files['cronograma'][0], tipo: 'Cronograma' });
       }
       if (req.files['honestidad'] && req.files['honestidad'][0]) {
-        filesToUpload.push({ file: req.files['honestidad'][0], tipo: 'Declaración de Honestidad' });
+        filesToUpload.push({ file: req.files['honestidad'][0], tipo: 'Honestidad' });
       }
       if (req.files['identidad'] && req.files['identidad'][0]) {
-        filesToUpload.push({ file: req.files['identidad'][0], tipo: 'Soporte Documento Identidad' });
+        filesToUpload.push({ file: req.files['identidad'][0], tipo: 'Identidad' });
       }
     }
 
@@ -148,11 +156,9 @@ const updateSolicitud = async (req, res) => {
       estado, 
       motivo_decision, 
       motivo_cambio, 
-      tipos_documentos,
       sede_vinculacion 
     } = req.body;
 
-    // Resolución dinámica de sede_id si se envía por nombre de vinculación desde el front
     if (!sede_id && sede_vinculacion) {
       try {
         const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
@@ -160,7 +166,6 @@ const updateSolicitud = async (req, res) => {
           sede_id = rows[0].id;
         }
       } catch (err) {
-        // Fallback alfabético por ID en caso de que falle la consulta directa
         const sedesMap = {
           "Apartadó": 1, "Arauca": 2, "Barrancabermeja": 3, "Bogotá": 4, "Bucaramanga": 5,
           "Cali": 6, "Cartago": 7, "El Espinal": 8, "Ibagué": 9, "Medellín": 10, "Montería": 11,
@@ -185,6 +190,12 @@ const updateSolicitud = async (req, res) => {
       num_solicitud = num_solicitud.trim().toUpperCase();
     }
 
+    // Mantener las URLs previas si no se suben archivos nuevos en el update
+    const urlPresupuesto = req.files && req.files['presupuesto'] ? '/uploads/' + req.files['presupuesto'][0].filename : solicitudPrevia.presupuesto_url;
+    const urlCronograma = req.files && req.files['cronograma'] ? '/uploads/' + req.files['cronograma'][0].filename : solicitudPrevia.cronograma_url;
+    const urlHonestidad = req.files && req.files['honestidad'] ? '/uploads/' + req.files['honestidad'][0].filename : solicitudPrevia.honestidad_url;
+    const urlIdentidad = req.files && req.files['identidad'] ? '/uploads/' + req.files['identidad'][0].filename : solicitudPrevia.id_url;
+
     const affectedRows = await Solicitud.update(id, { 
       usuario_id, 
       convocatoria_id, 
@@ -193,23 +204,28 @@ const updateSolicitud = async (req, res) => {
       titulo_propuesta,
       observaciones, 
       estado,
-      motivo_decision
+      motivo_decision,
+      doc_par_1: solicitudPrevia.doc_par_1,
+      doc_par_2: solicitudPrevia.doc_par_2,
+      presupuesto_url: urlPresupuesto,
+      cronograma_url: urlCronograma,
+      honestidad_url: urlHonestidad,
+      id_url: urlIdentidad
     });
 
-    // Procesamiento de los archivos subidos por campos específicos
     const filesToUpload = [];
     if (req.files) {
       if (req.files['presupuesto'] && req.files['presupuesto'][0]) {
-        filesToUpload.push({ file: req.files['presupuesto'][0], tipo: 'Presupuesto General' });
+        filesToUpload.push({ file: req.files['presupuesto'][0], tipo: 'Presupuesto' });
       }
       if (req.files['cronograma'] && req.files['cronograma'][0]) {
-        filesToUpload.push({ file: req.files['cronograma'][0], tipo: 'Cronograma de Actividades' });
+        filesToUpload.push({ file: req.files['cronograma'][0], tipo: 'Cronograma' });
       }
       if (req.files['honestidad'] && req.files['honestidad'][0]) {
-        filesToUpload.push({ file: req.files['honestidad'][0], tipo: 'Declaración de Honestidad' });
+        filesToUpload.push({ file: req.files['honestidad'][0], tipo: 'Honestidad' });
       }
       if (req.files['identidad'] && req.files['identidad'][0]) {
-        filesToUpload.push({ file: req.files['identidad'][0], tipo: 'Soporte Documento Identidad' });
+        filesToUpload.push({ file: req.files['identidad'][0], tipo: 'Identidad' });
       }
     }
 
