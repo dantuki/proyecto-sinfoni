@@ -219,9 +219,24 @@ function RevisarSolicitudes({ usuario }) {
       alert("Este documento no fue cargado correctamente o no está disponible.");
       return;
     }
-    const urlCompleta = nombreArchivo.startsWith('http') 
-      ? nombreArchivo 
-      : `http://localhost:5000/uploads/${nombreArchivo}`;
+
+    // Si ya viene con protocolo http/https, lo abrimos directamente
+    if (nombreArchivo.startsWith('http')) {
+      window.open(nombreArchivo, '_blank');
+      return;
+    }
+
+    // 1. Limpiamos cualquier barra diagonal '/' redundante al inicio
+    let nombreLimpio = nombreArchivo.replace(/^\/+/, '');
+
+    // 2. Si el archivo ya empieza con 'uploads/', lo removemos temporalmente
+    // para evitar que se duplique al concatenarlo con la URL del servidor
+    if (nombreLimpio.startsWith('uploads/')) {
+      nombreLimpio = nombreLimpio.replace(/^uploads\//, '');
+    }
+
+    // 3. Generamos la URL limpia y unificada
+    const urlCompleta = `http://localhost:5000/uploads/${nombreLimpio}`;
     
     window.open(urlCompleta, '_blank');
   };
