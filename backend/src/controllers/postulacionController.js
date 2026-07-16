@@ -157,8 +157,10 @@ const updateEstadoPostulacion = async (req, res) => {
       });
     }
 
-    // Usamos el método optimizado del modelo que actualiza estado y motivo de decisión
-    const affectedRows = await Solicitud.updateEstado(id, estado, motivo_decision);
+    // Si el nuevo estado no es "Rechazado", anulamos el motivo de decisión anterior
+    const motivoFinal = estado === 'Rechazado' ? motivo_decision : null;
+
+    const affectedRows = await Solicitud.updateEstado(id, estado, motivoFinal);
 
     if (affectedRows === 0) {
       return res.status(404).json({
