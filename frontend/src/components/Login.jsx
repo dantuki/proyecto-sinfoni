@@ -59,11 +59,10 @@ export default function AuthContainer({ alAutenticar }) {
         return;
       }
 
-      // Guardamos el Token y el ID en el almacenamiento local
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userId', data.user.id);
+      // CAMBIO AQUÍ: Guardamos en sessionStorage para aislar las pestañas de pruebas
+      sessionStorage.setItem('token', data.token);
+      sessionStorage.setItem('userId', data.user.id);
 
-      // Sincronizado exactamente con las propiedades que espera tu App.jsx
       const usuarioFormateado = {
         id: data.user.id,
         nombre_completo: data.user.nombre_completo, 
@@ -71,7 +70,6 @@ export default function AuthContainer({ alAutenticar }) {
         rol: data.user.rol 
       };
 
-      // Mandamos el usuario a App.jsx para darle paso al Dashboard
       alAutenticar(usuarioFormateado);
 
     } catch (err) {
@@ -128,7 +126,6 @@ export default function AuthContainer({ alAutenticar }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between p-6 sm:p-10 font-sans selection:bg-blue-500 selection:text-white">
-      
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-slate-100 space-y-6 transition-all duration-300">
           
@@ -158,9 +155,9 @@ export default function AuthContainer({ alAutenticar }) {
           {isLogin ? (
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-1.5">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Inicia Seccion</h1>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Inicia Sesión</h1>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Introduce tus Correo y Contraseña con la que iniciaste seccion 
+                  Introduce tu Correo y Contraseña con la que iniciaste sesión 
                 </p>
               </div>
 
@@ -233,7 +230,6 @@ export default function AuthContainer({ alAutenticar }) {
               </div>
             </div>
           ) : (
-            
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Solicitud de Cuenta</h1>
@@ -342,7 +338,6 @@ export default function AuthContainer({ alAutenticar }) {
         </span>
         <span>Versión 2026.1</span>
       </div>
-
     </div>
   );
 }
