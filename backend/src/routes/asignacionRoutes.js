@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/asignacionController');
-const upload = require('../middleware/uploadMiddleware'); // <-- CORREGIDO: Ruta en singular 'middleware'
+const upload = require('../middleware/uploadMiddleware'); // Singular 'middleware' corregido
 
 router.get('/', ctrl.getAsignaciones);                                 // GET general (Listar todas)
+router.get('/todas', ctrl.getAsignaciones);                            // GET todas (NUEVO: Soporte para el endpoint del frontend del Admin)
 router.get('/evaluador/:evaluadorId', ctrl.getAsignacionesByEvaluador); // GET específico de un evaluador
 router.get('/:id', ctrl.getAsignacionById);                        // GET específico por ID
 router.post('/', ctrl.asignarEvaluador);                           // POST (Agregar / Crear asignación)

@@ -3,12 +3,14 @@ const db = require('../config/db');
 const Asignacion = {
   getAll: async () => {
     const query = `
-      SELECT a.id AS asignacion_id, a.solicitud_id, a.evaluador_id, a.puntaje, a.comentarios, a.estado_evaluacion,
+      SELECT a.id AS asignacion_id, a.solicitud_id, a.evaluador_id, a.puntaje, a.comentarios, a.estado_evaluacion, a.archivo_evaluacion,
              s.num_solicitud AS codigoPropuesta, s.titulo_propuesta,
-             u.nombre_completo AS docente_nombre
+             u.nombre_completo AS docente_nombre,
+             ev.nombre_completo AS evaluador_nombre
       FROM asignacion_evaluaciones a
       JOIN solicitudes s ON a.solicitud_id = s.id
       JOIN usuarios u ON s.usuario_id = u.id
+      LEFT JOIN usuarios ev ON a.evaluador_id = ev.id
     `;
     const [rows] = await db.query(query);
     return rows;
@@ -16,12 +18,14 @@ const Asignacion = {
 
   getById: async (id) => {
     const query = `
-      SELECT a.id AS asignacion_id, a.solicitud_id, a.evaluador_id, a.puntaje, a.comentarios, a.estado_evaluacion,
+      SELECT a.id AS asignacion_id, a.solicitud_id, a.evaluador_id, a.puntaje, a.comentarios, a.estado_evaluacion, a.archivo_evaluacion,
              s.num_solicitud AS codigoPropuesta, s.titulo_propuesta,
-             u.nombre_completo AS docente_nombre
+             u.nombre_completo AS docente_nombre,
+             ev.nombre_completo AS evaluador_nombre
       FROM asignacion_evaluaciones a
       JOIN solicitudes s ON a.solicitud_id = s.id
       JOIN usuarios u ON s.usuario_id = u.id
+      LEFT JOIN usuarios ev ON a.evaluador_id = ev.id
       WHERE a.id = ?
     `;
     const [rows] = await db.query(query, [id]);
@@ -30,14 +34,16 @@ const Asignacion = {
 
   getByEvaluadorId: async (evaluadorId) => {
     const query = `
-      SELECT a.id AS asignacion_id, a.solicitud_id, a.evaluador_id, a.puntaje, a.comentarios, a.estado_evaluacion,
+      SELECT a.id AS asignacion_id, a.solicitud_id, a.evaluador_id, a.puntaje, a.comentarios, a.estado_evaluacion, a.archivo_evaluacion,
              s.num_solicitud AS codigoPropuesta, s.titulo_propuesta,
              s.presupuesto_url AS presupuesto, s.cronograma_url AS cronograma, 
              s.honestidad_url AS honestidad, s.id_url AS id_documento,
-             u.nombre_completo AS docente_nombre
+             u.nombre_completo AS docente_nombre,
+             ev.nombre_completo AS evaluador_nombre
       FROM asignacion_evaluaciones a
       JOIN solicitudes s ON a.solicitud_id = s.id
       JOIN usuarios u ON s.usuario_id = u.id
+      LEFT JOIN usuarios ev ON a.evaluador_id = ev.id
       WHERE a.evaluador_id = ?
     `;
     const [rows] = await db.query(query, [evaluadorId]);
@@ -65,10 +71,12 @@ const Asignacion = {
   },
 
   updateEvaluacion: async (id, data) => {
-    const { puntaje, comentarios } = data;
+    const { puntaje, comentarios, archivo_evaluacion } = data;
     const [result] = await db.query(
-      `UPDATE asignacion_evaluaciones SET puntaje = ?, comentarios = ?, estado_evaluacion = 'Finalizado' WHERE id = ?`,
-      [puntaje, comentarios, id]
+      `UPDATE asignacion_evaluaciones 
+       SET puntaje = ?, comentarios = ?, archivo_evaluacion = ?, estado_evaluacion = 'Finalizado' 
+       WHERE id = ?`,
+      [puntaje, comentarios, archivo_evaluacion, id]
     );
     return result.affectedRows;
   },

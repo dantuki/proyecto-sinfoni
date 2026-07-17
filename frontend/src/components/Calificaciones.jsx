@@ -45,7 +45,7 @@ const Calificaciones = ({ usuario }) => {
       return;
     }
 
-    let nombreLimpio = nombreArchivo.replace(/^\/+/, '');
+    let nombreLimpio = Error ? nombreArchivo.replace(/^\/+/, '') : nombreArchivo;
     if (nombreLimpio.startsWith('uploads/')) {
       nombreLimpio = nombreLimpio.replace(/^uploads\//, '');
     }
@@ -71,78 +71,78 @@ const Calificaciones = ({ usuario }) => {
         </button>
       </div>
 
-          {cargando ? (
-            <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <p className="text-slate-500">Cargando datos de evaluación...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12 bg-red-50 text-red-600 rounded-2xl border border-red-100 shadow-sm">
-              <p className="font-bold">Error del Servidor</p>
-              <p className="text-xs mt-1">{error}</p>
-            </div>
-          ) : calificaciones.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
-              <span className="text-4xl">📊</span>
-              <p className="text-slate-500 font-medium mt-4">No se registran propuestas asignadas para evaluar en este momento.</p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100">
-                      <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Propuesta</th>
-                      <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Evaluador</th>
-                      <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Estado</th>
-                      <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Puntaje</th>
-                      <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Comentarios</th>
-                      <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Retroalimentación</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {calificaciones.map((cal) => (
-                      <tr key={cal.asignacion_id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-4">
-                          <div className="font-semibold text-slate-800">{cal.titulo_propuesta || 'Sin Título'}</div>
-                          <div className="text-xs text-slate-400 mt-0.5">{cal.codigoPropuesta || 'SIN-CODIGO'}</div>
-                        </td>
-                        <td className="p-4 text-slate-600 font-medium">
-                          {cal.evaluador_nombre || 'No Asignado'}
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                            cal.estado_evaluacion === 'Finalizado'
-                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                              : 'bg-amber-50 text-amber-600 border border-amber-100'
-                          }`}>
-                            {cal.estado_evaluacion === 'Finalizado' ? '✓ Evaluado' : '⏱️ Pendiente'}
-                          </span>
-                        </td>
-                        <td className="p-4 font-bold text-slate-700">
-                          {cal.estado_evaluacion === 'Finalizado' ? `${cal.puntaje} / 100` : '-'}
-                        </td>
-                        <td className="p-4 text-slate-500 text-xs max-w-xs truncate" title={cal.comentarios}>
-                          {cal.estado_evaluacion === 'Finalizado' ? cal.comentarios : 'Esperando revisión...'}
-                        </td>
-                        <td className="p-4">
-                          {cal.estado_evaluacion === 'Finalizado' && cal.archivo_evaluacion ? (
-                            <button
-                              onClick={() => descargarDocumento(cal.archivo_evaluacion)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#5B9BD5] bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1.5"
-                            >
-                              📄 Descargar PDF
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-400">Sin Reporte</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+      {cargando ? (
+        <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
+          <p className="text-slate-500">Cargando datos de evaluación...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 bg-red-50 text-red-600 rounded-2xl border border-red-100 shadow-sm">
+          <p className="font-bold">Error del Servidor</p>
+          <p className="text-xs mt-1">{error}</p>
+        </div>
+      ) : calificaciones.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-sm">
+          <span className="text-4xl">📊</span>
+          <p className="text-slate-500 font-medium mt-4">No se registran propuestas asignadas para evaluar en este momento.</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Propuesta</th>
+                  <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Evaluador</th>
+                  <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Estado</th>
+                  <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Puntaje</th>
+                  <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Comentarios</th>
+                  <th className="p-4 text-xs font-extrabold text-slate-500 uppercase tracking-wider">Retroalimentación</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {calificaciones.map((cal) => (
+                  <tr key={cal.asignacion_id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-4">
+                      <div className="font-semibold text-slate-800">{cal.titulo_propuesta || 'Sin Título'}</div>
+                      <div className="text-xs text-slate-400 mt-0.5">{cal.codigoPropuesta || 'SIN-CODIGO'}</div>
+                    </td>
+                    <td className="p-4 text-slate-600 font-medium">
+                      {cal.evaluador_nombre || 'No Asignado'}
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                        cal.estado_evaluacion === 'Finalizado'
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                          : 'bg-amber-50 text-amber-600 border border-amber-100'
+                      }`}>
+                        {cal.estado_evaluacion === 'Finalizado' ? '✓ Evaluado' : '⏱️ Pendiente'}
+                      </span>
+                    </td>
+                    <td className="p-4 font-bold text-slate-700">
+                      {cal.estado_evaluacion === 'Finalizado' ? `${cal.puntaje} / 100` : '-'}
+                    </td>
+                    <td className="p-4 text-slate-500 text-xs max-w-xs truncate" title={cal.comentarios}>
+                      {cal.estado_evaluacion === 'Finalizado' ? cal.comentarios : 'Esperando revisión...'}
+                    </td>
+                    <td className="p-4">
+                      {cal.estado_evaluacion === 'Finalizado' && cal.archivo_evaluacion ? (
+                        <button
+                          onClick={() => descargarDocumento(cal.archivo_evaluacion)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#5B9BD5] bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer flex items-center gap-1.5"
+                        >
+                          📄 Descargar PDF
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-400">Sin Reporte</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
