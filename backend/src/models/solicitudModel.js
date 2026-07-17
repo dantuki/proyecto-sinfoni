@@ -20,12 +20,13 @@ const Solicitud = {
              u.email AS docente_correo,
              c.titulo AS convocatoria,
              se.nombre_sede AS nombre_sede,
-             se.id AS sede,
+             se.id AS Sede,
              asig.evaluador_id AS evaluador_id,
              uev.nombre_completo AS evaluador_nombre,
              asig.puntaje AS evaluacion_puntaje,
              asig.comentarios AS evaluacion_comentarios,
-             asig.estado_evaluacion AS evaluacion_estado
+             asig.estado_evaluacion AS evaluacion_estado,
+             asig.archivo_evaluacion AS evaluacion_archivo
       FROM solicitudes s
       JOIN usuarios u ON s.usuario_id = u.id
       JOIN convocatorias c ON s.convocatoria_id = c.id
@@ -59,12 +60,13 @@ const Solicitud = {
              u.email AS docente_correo,
              c.titulo AS convocatoria,
              se.nombre_sede AS nombre_sede,
-             se.id AS sede,
+             se.id AS Sede,
              asig.evaluador_id AS evaluador_id,
              uev.nombre_completo AS evaluador_nombre,
              asig.puntaje AS evaluacion_puntaje,
              asig.comentarios AS evaluacion_comentarios,
-             asig.estado_evaluacion AS evaluacion_estado
+             asig.estado_evaluacion AS evaluacion_estado,
+             asig.archivo_evaluacion AS evaluacion_archivo
       FROM solicitudes s
       JOIN usuarios u ON s.usuario_id = u.id
       JOIN convocatorias c ON s.convocatoria_id = c.id
@@ -94,7 +96,7 @@ const Solicitud = {
              s.created_at AS fecha_radicacion,
              c.titulo AS convocatoria,
              se.nombre_sede AS nombre_sede,
-             se.id AS sede
+             se.id AS Sede
       FROM solicitudes s
       JOIN convocatorias c ON s.convocatoria_id = c.id
       JOIN sedes se ON s.sede_id = se.id

@@ -11,6 +11,7 @@ const EvaluarPropuestas = ({ usuario }) => {
   const [propuestaSeleccionada, setPropuestaSeleccionada] = useState(null);
   const [puntaje, setPuntaje] = useState('');
   const [comentarios, setComentarios] = useState('');
+  const [archivoEvaluacion, setArchivoEvaluacion] = useState(null); // AGREGADO: Estado para el archivo PDF
   const [guardando, setGuardando] = useState(false);
   const [mensajeExito, setMensajeExito] = useState('');
 
@@ -66,16 +67,12 @@ const EvaluarPropuestas = ({ usuario }) => {
     window.open(urlCompleta, '_blank');
   };
 
-  // Función para descargar la plantilla de evaluación que pide el cliente
   const descargarPlantillaCalificacion = () => {
-    // Alerta descriptiva y limpia para el cliente mientras se configura el archivo real
     const confirmar = window.confirm(
       "¿Deseas descargar la Plantilla de Calificación oficial para Evaluadores SINFONI?\n\n(Nota: Si el archivo definitivo aún no se ha subido al servidor, se procesará una plantilla modelo por defecto)."
     );
     
     if (confirmar) {
-      // Apunta a un archivo estático en la carpeta /public de React o uploads del Backend.
-      // Puedes guardar el archivo final en frontend/public/plantillas/plantilla_evaluacion.docx
       window.open('/plantillas/plantilla_evaluacion.docx', '_blank');
     }
   };
@@ -84,6 +81,7 @@ const EvaluarPropuestas = ({ usuario }) => {
     setPropuestaSeleccionada(propuesta);
     setPuntaje(propuesta.puntaje || '');
     setComentarios(propuesta.comentarios || '');
+    setArchivoEvaluacion(null); // Resetear archivo al abrir una nueva propuesta
     setMensajeExito('');
   };
 
@@ -102,22 +100,30 @@ const EvaluarPropuestas = ({ usuario }) => {
 
     try {
       setGuardando(true);
+
+      // MODIFICADO: Estructuración con FormData para soportar el archivo PDF de retroalimentación
+      const formData = new FormData();
+      formData.append('puntaje', pts);
+      formData.append('comentarios', comentarios.trim());
+      if (archivoEvaluacion) {
+        formData.append('archivo_evaluacion', archivoEvaluacion);
+      }
+
       const res = await fetch(`${API_BASE}/asignaciones/${propuestaSeleccionada.asignacion_id}/calificar`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          // ¡IMPORTANTE! Al usar FormData NUNCA debemos setear 'Content-Type' manualmente.
+          // El navegador se encarga de calcularlo e insertar los boundaries correctos.
           'Authorization': `Bearer ${sessionStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          puntaje: pts,
-          comentarios: comentarios.trim()
-        })
+        body: formData
       });
 
       const resData = await res.json();
 
       if (res.ok && resData.status === 'success') {
         setMensajeExito('¡Evaluación guardada y finalizada exitosamente!');
+        setArchivoEvaluacion(null);
         await obtenerAsignaciones();
         
         setTimeout(() => {
@@ -143,7 +149,6 @@ const EvaluarPropuestas = ({ usuario }) => {
           </p>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          {/* Botón dinámico de descarga de plantilla solicitado por el cliente */}
           <button
             onClick={descargarPlantillaCalificacion}
             className="px-4 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/50 rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center"
@@ -246,6 +251,14 @@ const EvaluarPropuestas = ({ usuario }) => {
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-100/60 mb-4 text-xs space-y-1">
                     <p className="text-slate-700"><strong>Puntaje de evaluación:</strong> {asig.puntaje} / 100</p>
                     <p className="text-slate-600"><strong>Comentarios registrados:</strong> "{asig.comentarios}"</p>
+                    {asig.archivo_evaluacion && (
+                      <button
+                        onClick={() => descargarDocumento(asig.archivo_evaluacion)}
+                        className="mt-2 text-xs font-bold text-[#5B9BD5] hover:text-[#4a8bc4] flex items-center gap-1 cursor-pointer"
+                      >
+                        📄 Ver Archivo de Calificación Adjunto
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -315,8 +328,21 @@ const EvaluarPropuestas = ({ usuario }) => {
                     required
                     value={comentarios}
                     onChange={(e) => setComentarios(e.target.value)}
-                    placeholder="Escribe aquí las observaciones, fortalezas y puntos de mejora del proyecto..."
+                    placeholder="Escribe aquí las observaciones..."
                     className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/30 focus:border-[#5B9BD5]"
+                  />
+                </div>
+
+                {/* AGREGADO: Campo de selección de archivo PDF firmado de la evaluación */}
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Documento de Evaluación (PDF con Firma)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setArchivoEvaluacion(e.target.files[0])}
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5B9BD5]/30 focus:border-[#5B9BD5] bg-white text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                   />
                 </div>
 

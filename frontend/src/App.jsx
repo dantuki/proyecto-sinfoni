@@ -8,7 +8,8 @@ import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 import CrearConvocatoria from "./components/CrearConvocatoria";
 import MisSolicitudes from "./components/MisSolicitudes";
 import RevisarSolicitudes from "./components/RevisarSolicitudes";
-import EvaluarPropuestas from "./components/EvaluarPropuestas"; // IMPORTACIÓN AGREGADA
+import EvaluarPropuestas from "./components/EvaluarPropuestas";
+import Calificaciones from "./components/Calificaciones"; // AGREGADO: Importamos el nuevo módulo
 
 const ControlUsuarios = () => {
   return (
@@ -29,10 +30,8 @@ function App() {
   const handleLogout = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('userId');
-
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
-
     setUsuario(null);
     setHistorial(['inicio']);
   };
@@ -100,8 +99,10 @@ function App() {
         );
       case 'revisar_solicitudes':
         return <RevisarSolicitudes usuario={usuario} />;
-      case 'evaluar_propuestas': // CASO AGREGADO PARA EL EVALUADOR
+      case 'evaluar_propuestas':
         return <EvaluarPropuestas usuario={usuario} />;
+      case 'calificaciones': // AGREGADO: Render de Calificaciones
+        return <Calificaciones usuario={usuario} />;
       case 'control_usuarios': 
         return <ControlUsuarios />;
       default: 
@@ -149,7 +150,6 @@ function App() {
             </button>
           )}
 
-          {/* BOTÓN CONDICIONAL PARA EL EVALUADOR */}
           {usuario.rol === 'Evaluador' && (
             <button 
               onClick={() => cambiarVistaLimpia('evaluar_propuestas')} 
@@ -166,6 +166,14 @@ function App() {
                 className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
               >
                 <span>📥</span> Revisar Solicitudes
+              </button>
+
+              {/* AGREGADO: Botón para Calificaciones en el menú del Administrador */}
+              <button 
+                onClick={() => cambiarVistaLimpia('calificaciones')} 
+                className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
+              >
+                <span>📊</span> Calificaciones
               </button>
 
               <button 

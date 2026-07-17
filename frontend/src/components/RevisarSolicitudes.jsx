@@ -7,7 +7,7 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
   const [nuevoEstado, setNuevoEstado] = useState(sol.estado);
   const [motivo, setMotivo] = useState(sol.motivo_decision || '');
   const [mostrarMotivoInput, setMostrarMotivoInput] = useState(sol.estado === 'Rechazado');
-  const [mostrarEvaluadorInput, setMostrarEvaluadorInput] = useState(false); // Por defecto cerrado
+  const [mostrarEvaluadorInput, setMostrarEvaluadorInput] = useState(false);
   const [evaluadorSeleccionado, setEvaluadorSeleccionado] = useState(sol.evaluador_id || '');
   const [enviando, setEnviando] = useState(false);
 
@@ -35,7 +35,15 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
     }
   };
 
-  const guardarCambioEstado = async (estadoDestino, motivoTexto) => {
+  const handleCancelarAccion = () => {
+    setNuevoEstado(sol.estado);
+    setMotivo(sol.motivo_decision || '');
+    setMostrarMotivoInput(sol.estado === 'Rechazado');
+    setMostrarEvaluadorInput(false);
+    setEvaluadorSeleccionado(sol.evaluador_id || '');
+  };
+
+  const guardarCambioEstado = async (estadoDestino, motivoTexto, silencioso = false) => {
     setEnviando(true);
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
@@ -49,19 +57,21 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
 
       if (respuesta.data.status === 'success') {
         onActualizarEstado(sol.id, estadoDestino, estadoDestino === 'Rechazado' ? motivoTexto : null);
-        if (estadoDestino !== 'Rechazado') {
-          alert("Estado actualizado correctamente.");
-        } else {
-          alert("Propuesta rechazada con éxito.");
+        if (!silencioso) {
+          if (estadoDestino !== 'Rechazado') {
+            alert("Estado actualizado correctamente.");
+          } else {
+            alert("Propuesta rechazada con éxito.");
+          }
         }
       } else {
         alert("No se pudo actualizar el estado de la propuesta.");
+        handleCancelarAccion();
       }
     } catch (err) {
       console.error("Error al actualizar estado:", err);
       alert(err.response?.data?.message || "Ocurrió un error al actualizar el estado.");
-      setNuevoEstado(sol.estado);
-      setMostrarMotivoInput(sol.estado === 'Rechazado');
+      handleCancelarAccion();
     } finally {
       setEnviando(false);
     }
@@ -93,7 +103,7 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
 
       if (respuesta.data.status === 'success') {
         if (sol.estado !== 'En Evaluación') {
-          await guardarCambioEstado('En Evaluación', null);
+          await guardarCambioEstado('En Evaluación', null, true);
         }
         onAsignarEvaluador(sol.id, evaluadorSeleccionado);
         alert("Evaluador asignado correctamente.");
@@ -110,7 +120,7 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
   };
 
   return (
-    <tr className="hover:bg-slate-50/40 transition-colors group">
+    <tr className="hover:bg-slate-50/40 transition-colors group border-b border-slate-100">
       <td className="py-5 px-6 max-w-xs">
         <span className="inline-block px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200/50 mb-1.5">
           {sol.codigoPropuesta || 'SIN CÓDIGO'}
@@ -129,8 +139,20 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
           </div>
         )}
         {sol.evaluador_nombre && (
-          <div className="mt-2 p-2 bg-blue-50/60 border border-blue-100/50 rounded-xl text-[11px] text-blue-700 leading-relaxed">
-            <strong>Evaluador asignado:</strong> {sol.evaluador_nombre}
+          <div className="mt-2 p-2.5 bg-blue-50/60 border border-blue-100/50 rounded-xl text-[11px] text-blue-700 leading-relaxed space-y-1 shadow-sm">
+            <div>
+              <strong>Evaluador asignado:</strong> <span className="font-semibold text-slate-800">{sol.evaluador_nombre}</span>
+            </div>
+            {sol.puntaje !== undefined && sol.puntaje !== null && (
+              <div className="text-[10px] text-blue-800 bg-white/50 px-2 py-1.5 rounded-lg border border-blue-100 mt-1">
+                <strong>Calificación:</strong> <span className="font-extrabold">{sol.puntaje} / 100</span>
+              </div>
+            )}
+            {sol.comentarios && (
+              <div className="text-[10px] text-slate-600 italic bg-white/70 p-2 rounded-lg border border-blue-100/30 mt-1 max-h-16 overflow-y-auto">
+                <strong>Comentarios:</strong> "{sol.comentarios}"
+              </div>
+            )}
           </div>
         )}
       </td>
@@ -173,6 +195,17 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
           >
             🪪 Identidad
           </button>
+
+          {/* DOCUMENTO NUEVO: ACTA DE EVALUACIÓN (Ocupa las dos columnas si existe) */}
+          {sol.archivo_evaluacion && (
+            <button
+              onClick={() => descargarDocumento(sol.archivo_evaluacion)}
+              className="col-span-2 mt-1 px-2.5 py-2 rounded-xl text-[10px] font-extrabold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+              title="Descargar Acta de Evaluación Final"
+            >
+              📄 Ver Acta de Evaluación
+            </button>
+          )}
         </div>
       </td>
 
@@ -190,18 +223,23 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
             <option value="Rechazado">❌ Rechazado</option>
           </select>
 
-          {/* Botón premium de despliegue dinámico independiente */}
           <button
             type="button"
-            onClick={() => setMostrarEvaluadorInput(!mostrarEvaluadorInput)}
+            onClick={() => {
+              if (mostrarEvaluadorInput) {
+                handleCancelarAccion();
+              } else {
+                setMostrarEvaluadorInput(true);
+                setMostrarMotivoInput(false);
+              }
+            }}
             className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-[#5B9BD5] border border-slate-200 hover:border-[#5B9BD5]/20 rounded-xl text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
           >
             {sol.evaluador_id ? '👥 Cambiar Evaluador' : '👥 Asignar Evaluador'}
           </button>
 
-          {/* Selector condicional para asignar Evaluador */}
           {mostrarEvaluadorInput && (
-            <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-xl space-y-2 mt-1">
+            <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-xl space-y-2 mt-1 shadow-sm">
               <label className="block text-[9px] uppercase font-extrabold text-amber-800 tracking-wider">
                 Seleccionar Evaluador *
               </label>
@@ -218,19 +256,28 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
                   </option>
                 ))}
               </select>
-              <button
-                onClick={handleConfirmarAsignacion}
-                disabled={enviando || !evaluadorSeleccionado}
-                className="w-full py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-              >
-                {enviando ? 'Asignando...' : 'Confirmar Asignación'}
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={handleConfirmarAsignacion}
+                  disabled={enviando || !evaluadorSeleccionado}
+                  className="flex-1 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  {enviando ? 'Asignando...' : 'Confirmar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelarAccion}
+                  disabled={enviando}
+                  className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Formulario Inline para rechazo */}
           {mostrarMotivoInput && (
-            <div className="bg-red-50/50 border border-red-100 p-3 rounded-xl space-y-2 mt-1">
+            <div className="bg-red-50/50 border border-red-100 p-3 rounded-xl space-y-2 mt-1 shadow-sm">
               <label className="block text-[9px] uppercase font-extrabold text-red-700 tracking-wider">
                 Motivo de Rechazo Obligatorio *
               </label>
@@ -243,13 +290,23 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
                 className="w-full p-2 border border-red-200 rounded-lg text-[11px] focus:ring-2 focus:ring-red-200 outline-none resize-none bg-white text-slate-700"
                 required
               />
-              <button
-                onClick={handleConfirmarRechazo}
-                disabled={enviando}
-                className="w-full py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
-              >
-                {enviando ? 'Guardando...' : 'Confirmar Rechazo'}
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={handleConfirmarRechazo}
+                  disabled={enviando}
+                  className="flex-1 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  {enviando ? 'Guardando...' : 'Confirmar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelarAccion}
+                  disabled={enviando}
+                  className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           )}
 

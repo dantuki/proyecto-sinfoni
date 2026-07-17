@@ -26,19 +26,31 @@ const getSolicitudes = async (req, res) => {
     const rol = String(rolRaw || '').trim().toLowerCase();
     const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
 
-    // Si es Administrador, se le permite ver todas las solicitudes
+    // Si es Administrador, se le permite ver todas las solicitudes (incluye datos de evaluación)
     if (esAdmin) {
       const solicitudes = await Solicitud.getAll(); 
       return res.status(200).json({ status: "success", data: solicitudes });
     }
 
-    // Si es Docente, solo ve las suyas (Consulta blindada)
+    // Si es Docente, solo ve las suyas (Consulta con aliases corregidos y consistentes)
     const query = `
-      SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
-             s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
-             u.nombre_completo AS profesor,
+      SELECT s.id, 
+             s.num_solicitud AS codigoPropuesta, 
+             s.titulo_propuesta, 
+             s.observaciones, 
+             s.estado, 
+             s.motivo_decision, 
+             s.presupuesto_url AS presupuesto, 
+             s.cronograma_url AS cronograma, 
+             s.honestidad_url AS honestidad, 
+             s.id_url AS id_documento, 
+             s.doc_par_1, 
+             s.doc_par_2, 
+             s.created_at AS fecha_radicacion,
+             u.nombre_completo AS docente_nombre,
              c.titulo AS convocatoria,
-             se.nombre AS Sede
+             se.nombre_sede AS nombre_sede,
+             se.id AS Sede
       FROM solicitudes s
       LEFT JOIN usuarios u ON s.usuario_id = u.id
       LEFT JOIN convocatorias c ON s.convocatoria_id = c.id
@@ -56,7 +68,7 @@ const getSolicitudes = async (req, res) => {
   }
 };
 
-// Obtener las solicitudes propias (Garantiza que un docente NUNCA vea las de otros)
+// Obtener las solicitudes propias (Garantiza coherencia de nombres y evita errores SQL de columna)
 const getMisSolicitudes = async (req, res) => {
   try {
     if (!req.user) {
@@ -75,13 +87,25 @@ const getMisSolicitudes = async (req, res) => {
     let queryParams = [];
 
     if (esAdmin) {
-      // Si es Admin, en esta vista también le permitimos ver todo
       query = `
-        SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
-               s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
-               u.nombre_completo AS profesor,
+        SELECT s.id, 
+               s.num_solicitud AS codigoPropuesta, 
+               s.titulo_propuesta, 
+               s.observaciones, 
+               s.estado, 
+               s.motivo_decision, 
+               s.presupuesto_url AS presupuesto, 
+               s.cronograma_url AS cronograma, 
+               s.honestidad_url AS honestidad, 
+               s.id_url AS id_documento, 
+               s.doc_par_1, 
+               s.doc_par_2, 
+               s.created_at AS fecha_radicacion,
+               u.nombre_completo AS docente_nombre,
+               u.email AS docente_correo,
                c.titulo AS convocatoria,
-               se.nombre AS Sede
+               se.nombre_sede AS nombre_sede,
+               se.id AS Sede
         FROM solicitudes s
         LEFT JOIN usuarios u ON s.usuario_id = u.id
         LEFT JOIN convocatorias c ON s.convocatoria_id = c.id
@@ -89,13 +113,25 @@ const getMisSolicitudes = async (req, res) => {
         ORDER BY s.created_at DESC
       `;
     } else {
-      // Si es Docente, filtramos estrictamente por su usuario_id
       query = `
-        SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
-               s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
-               u.nombre_completo AS profesor,
+        SELECT s.id, 
+               s.num_solicitud AS codigoPropuesta, 
+               s.titulo_propuesta, 
+               s.observaciones, 
+               s.estado, 
+               s.motivo_decision, 
+               s.presupuesto_url AS presupuesto, 
+               s.cronograma_url AS cronograma, 
+               s.honestidad_url AS honestidad, 
+               s.id_url AS id_documento, 
+               s.doc_par_1, 
+               s.doc_par_2, 
+               s.created_at AS fecha_radicacion,
+               u.nombre_completo AS docente_nombre,
+               u.email AS docente_correo,
                c.titulo AS convocatoria,
-               se.nombre AS Sede
+               se.nombre_sede AS nombre_sede,
+               se.id AS Sede
         FROM solicitudes s
         LEFT JOIN usuarios u ON s.usuario_id = u.id
         LEFT JOIN convocatorias c ON s.convocatoria_id = c.id
@@ -130,7 +166,6 @@ const getSolicitudById = async (req, res) => {
     const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
     const esDuenio = String(solicitud.usuario_id) === String(logueadoId);
 
-    // Seguridad estricta: si no es admin y no es el dueño, se bloquea el acceso
     if (!esAdmin && !esDuenio) {
       return res.status(403).json({ status: "error", message: "Acceso denegado: No tienes permiso para ver esta solicitud" });
     }
@@ -148,7 +183,6 @@ const createSolicitud = async (req, res) => {
     const rol = String(rolRaw || '').trim().toLowerCase();
     const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
 
-    // Solo un administrador puede registrar una solicitud a nombre de otro id_usuario
     if (esAdmin && req.body.usuario_id) {
       usuario_id = req.body.usuario_id;
     }
@@ -165,7 +199,7 @@ const createSolicitud = async (req, res) => {
 
     if (!sede_id && sede_vinculacion) {
       try {
-        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
+        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre_sede = ?', [sede_vinculacion]);
         if (rows && rows.length > 0) {
           sede_id = rows[0].id;
         }
@@ -272,7 +306,6 @@ const updateSolicitud = async (req, res) => {
     const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
     const esDuenio = String(solicitudPrevia.usuario_id) === String(logueadoId);
 
-    // Seguridad de propiedad: Solo el dueño o un admin pueden modificar la solicitud
     if (!esAdmin && !esDuenio) {
       return res.status(403).json({ status: "error", message: "Acceso denegado: No puedes modificar una propuesta ajena" });
     }
@@ -296,7 +329,7 @@ const updateSolicitud = async (req, res) => {
 
     if (!sede_id && sede_vinculacion) {
       try {
-        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre = ?', [sede_vinculacion]);
+        const [rows] = await db.query('SELECT id FROM sedes WHERE nombre_sede = ?', [sede_vinculacion]);
         if (rows && rows.length > 0) {
           sede_id = rows[0].id;
         }
@@ -405,7 +438,6 @@ const deleteSolicitud = async (req, res) => {
     const esAdmin = rol === 'admin' || rol === 'administrador' || rol === '1';
     const esDuenio = String(solicitudPrevia.usuario_id) === String(logueadoId);
 
-    // Seguridad de propiedad: Solo el dueño o el administrador pueden eliminar
     if (!esAdmin && !esDuenio) {
       return res.status(403).json({ status: "error", message: "Acceso denegado: No tienes permisos para eliminar esta solicitud" });
     }
