@@ -4,10 +4,10 @@ const ctrl = require('../controllers/usuarioController');
 const multer = require('multer');
 const path = require('path');
 
-// Configuración de almacenamiento local de Multer para tus entornos de desarrollo
+// Configuración de almacenamiento local de Multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Asegúrate de tener la carpeta 'uploads' creada en la raíz de tu proyecto
+    cb(null, 'uploads/'); 
   },
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
@@ -20,10 +20,14 @@ const upload = multer({ storage });
 
 // Rutas base del módulo de usuarios
 router.get('/', ctrl.getUsuarios);
+
+// CORRECCIÓN: Colocar la ruta específica '/evaluadores' ANTES de la ruta dinámica '/:id'
+router.get('/evaluadores', ctrl.getEvaluadores); 
+
 router.get('/:id', ctrl.getUsuarioById);
 router.post('/registro', ctrl.registrarUsuario);
 
-// Interceptamos la subida de múltiples campos binarios aquí antes de pasar al controlador
+// Interceptamos la subida de múltiples archivos binarios
 router.put('/:id', upload.fields([
   { name: 'foto', maxCount: 1 },
   { name: 'certificado', maxCount: 1 }

@@ -16,6 +16,14 @@ const Usuario = {
     return rows[0];
   },
 
+  // Obtiene únicamente los usuarios cuyo rol sea 'Evaluador'
+  getEvaluadores: async () => {
+    const [rows] = await db.query(
+      "SELECT id, cedula, nombre_completo, email, rol, telefono, direccion, foto_url, nivel_educativo, carrera_titulo, certificado_url, fecha_nacimiento, created_at FROM usuarios WHERE LOWER(rol) = 'evaluador'"
+    );
+    return rows;
+  },
+
   create: async (data) => {
     const [result] = await db.query(
       'INSERT INTO usuarios (cedula, nombre_completo, email, password, rol, telefono, direccion, foto_url, nivel_educativo, carrera_titulo, certificado_url, fecha_nacimiento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',

@@ -1,117 +1,119 @@
 const Usuario = require('../models/usuarioModel');
-const bcrypt = require('bcryptjs');
-const fs = require('fs');
-const path = require('path');
+const bcrypt = require('bcrypt'); 
 
+// 1. GET General (Listar todos los usuarios)
 const getUsuarios = async (req, res) => {
   try {
-    const data = await Usuario.getAll();
-    res.json({ status: "success", data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-// NUEVO ENDPOINT: Obtener únicamente usuarios con rol evaluador
-const getEvaluadores = async (req, res) => {
-  try {
-    // Si tu usuarioModel tiene un query genérico, o podemos llamar a uno personalizado:
-    const data = await Usuario.getByRol('Evaluador'); 
-    res.json({ status: "success", data });
+    const usuarios = await Usuario.getAll();
+    res.status(200).json({ status: "success", data: usuarios });
   } catch (e) { 
-    res.status(500).json({ error: e.message }); 
+    res.status(500).json({ status: "error", message: e.message, error: e.message }); 
   }
 };
 
+// 2. GET Específico (Buscar por ID)
 const getUsuarioById = async (req, res) => {
   try {
-    const data = await Usuario.getById(req.params.id);
-    res.json({ status: "success", data });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-const registrarUsuario = async (req, res) => {
-  try {
-    const { cedula, password } = req.body;
-    
-    const existe = await Usuario.getByCedula(cedula);
-    if (existe) return res.status(400).json({ error: "Cédula ya existe" });
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const userData = { ...req.body, password: hashedPassword };
-    
-    const id = await Usuario.create(userData);
-    res.status(201).json({ status: "success", id });
-  } catch (e) { res.status(500).json({ error: e.message }); }
-};
-
-const updateUsuario = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const usuarioActual = await Usuario.getById(id);
-    const userObj = Array.isArray(usuarioActual) ? usuarioActual[0] : usuarioActual;
-
-    const updateData = { ...req.body };
-
-    if (req.files) {
-      if (req.files['foto'] && req.files['foto'][0]) {
-        if (userObj && userObj.foto_url) {
-          const rutaFotoVieja = path.join(__dirname, '../../', userObj.foto_url);
-          if (fs.existsSync(rutaFotoVieja)) {
-            fs.unlinkSync(rutaFotoVieja);
-          }
-        }
-        updateData.foto_url = `/uploads/${req.files['foto'][0].filename}`;
-      }
-
-      if (req.files['certificado'] && req.files['certificado'][0]) {
-        if (userObj && userObj.certificado_url) {
-          const rutaCertificadoViejo = path.join(__dirname, '../../', userObj.certificado_url);
-          if (fs.existsSync(rutaCertificadoViejo)) {
-            fs.unlinkSync(rutaCertificadoViejo);
-          }
-        }
-        updateData.certificado_url = `/uploads/${req.files['certificado'][0].filename}`;
-      }
+    const usuario = await Usuario.getById(req.params.id);
+    if (!usuario) {
+      return res.status(404).json({ status: "fail", message: "Usuario no encontrado" });
     }
-
-    if (!userObj) {
-      await Usuario.create({ id, ...updateData });
-    } else {
-      await Usuario.update(id, updateData);
-    }
-
-    const usuarioFinal = await Usuario.getById(id);
-
-    res.json({ 
-      status: "success", 
-      message: "Usuario actualizado correctamente",
-      data: usuarioFinal
-    });
+    res.status(200).json({ status: "success", data: usuario });
   } catch (e) { 
-    res.status(500).json({ error: e.message }); 
+    res.status(500).json({ status: "error", message: e.message, error: e.message }); 
   }
 };
 
-const deleteUsuario = async (req, res) => {
+// 3. GET Evaluadores (Filtrar solo usuarios con rol Evaluador)
+const getEvaluadores = async (req, res) => {
   try {
-    await Usuario.delete(req.params.id);
-    res.json({ status: "success" });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    const evaluadores = await Usuario.getEvaluadores();
+    res.status(200).json({ status: "success", data: evaluadores });
+  } catch (e) {
+    res.status(500).json({ status: "error", message: e.message, error: e.message });
+  }
 };
 
+// 4. POST (Registrar nuevo usuario)
+const registrarUsuario = async (req, res) => {
+  try {
+    const { contrasena, ...datosUsuario } = req.body;
+    
+    let contrasenaHash = contrasena;
+    if (contrasena) {
+      const salt = await bcrypt.genSalt(10);
+      contrasenaHash = await bcrypt.hash(contrasena, salt);
+    }
+
+    const id = await Usuario.create({
+      ...datosUsuario,
+      password: contrasenaHash
+    });
+
+    res.status(201).json({ status: "success", id });
+  } catch (e) { 
+    res.status(500).json({ status: "error", message: e.message, error: e.message }); 
+  }
+};
+
+// 5. PUT (Actualizar datos de usuario)
+const updateUsuario = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const datosActualizar = { ...req.body };
+
+    if (req.files) {
+      if (req.files['foto']) {
+        datosActualizar.foto_url = `/uploads/${req.files['foto'][0].filename}`;
+      }
+      if (req.files['certificado']) {
+        datosActualizar.certificado_url = `/uploads/${req.files['certificado'][0].filename}`;
+      }
+    }
+
+    if (datosActualizar.contrasena) {
+      const salt = await bcrypt.genSalt(10);
+      datosActualizar.password = await bcrypt.hash(datosActualizar.contrasena, salt);
+    }
+
+    const affectedRows = await Usuario.update(id, datosActualizar);
+    if (affectedRows === 0) {
+      return res.status(404).json({ status: "fail", message: "Usuario no encontrado para actualizar" });
+    }
+
+    res.json({ status: "success", message: "Usuario actualizado correctamente" });
+  } catch (e) { 
+    res.status(500).json({ status: "error", message: e.message, error: e.message }); 
+  }
+};
+
+// 6. DELETE (Eliminar un usuario)
+const deleteUsuario = async (req, res) => {
+  try {
+    const affectedRows = await Usuario.delete(req.params.id);
+    if (affectedRows === 0) {
+      return res.status(404).json({ status: "fail", message: "Usuario no encontrado para eliminar" });
+    }
+    res.json({ status: "success", message: "Usuario eliminado correctamente" });
+  } catch (e) { 
+    res.status(500).json({ status: "error", message: e.message, error: e.message }); 
+  }
+};
+
+// 7. DELETE (Limpiar tabla para desarrollo rápido)
 const limpiarTablaDesarrollo = async (req, res) => {
   try {
-    await Usuario.truncate();
-    res.json({ status: "success", message: "Tabla reseteada" });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    await Usuario.truncate(); 
+    res.json({ status: "success", message: "Tabla de usuarios purgada con éxito" });
+  } catch (e) { 
+    res.status(500).json({ status: "error", message: e.message, error: e.message }); 
+  }
 };
 
 module.exports = { 
   getUsuarios, 
-  getEvaluadores, // Exportado para agregarse a las rutas de usuarios
   getUsuarioById, 
+  getEvaluadores,
   registrarUsuario, 
   updateUsuario, 
   deleteUsuario, 

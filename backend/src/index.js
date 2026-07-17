@@ -27,12 +27,16 @@ db.query('SELECT 1')
   .then(() => console.log('Conexión exitosa con el motor MySQL'))
   .catch(err => console.error('Error en la base de datos:', err));
 
-// MONTAJE DE RUTAS (Se asigna /api/postulaciones)
+// MONTAJE DE RUTAS 
 app.use('/api/sedes', SedeRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/convocatorias', convocatoriaRoutes);
 app.use('/api/solicitudes', solicitudRoutes);
+
+// SOLUCIÓN: Soportamos tanto plural como singular para evitar conflictos de rutas
 app.use('/api/asignaciones', asignacionRoutes);
+app.use('/api/asignacion', asignacionRoutes); 
+
 app.use('/api/auth', authRoutes); 
 app.use('/api/noticias', noticiaRoutes); 
 app.use('/api/postulaciones', postulacionRoutes); // <-- Registrado con éxito

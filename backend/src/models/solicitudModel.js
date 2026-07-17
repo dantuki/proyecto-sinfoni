@@ -3,15 +3,35 @@ const db = require('../config/db');
 const Solicitud = {
   getAll: async () => {
     const query = `
-      SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
-             s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
-             u.nombre_completo AS profesor,
+      SELECT s.id, 
+             s.num_solicitud AS codigoPropuesta, 
+             s.titulo_propuesta, 
+             s.observaciones, 
+             s.estado, 
+             s.motivo_decision, 
+             s.presupuesto_url AS presupuesto, 
+             s.cronograma_url AS cronograma, 
+             s.honestidad_url AS honestidad, 
+             s.id_url AS id_documento, 
+             s.doc_par_1, 
+             s.doc_par_2, 
+             s.created_at AS fecha_radicacion,
+             u.nombre_completo AS docente_nombre,
+             u.email AS docente_correo,
              c.titulo AS convocatoria,
-             se.nombre_sede AS sede
+             se.nombre_sede AS nombre_sede,
+             se.id AS sede,
+             asig.evaluador_id AS evaluador_id,
+             uev.nombre_completo AS evaluador_nombre,
+             asig.puntaje AS evaluacion_puntaje,
+             asig.comentarios AS evaluacion_comentarios,
+             asig.estado_evaluacion AS evaluacion_estado
       FROM solicitudes s
       JOIN usuarios u ON s.usuario_id = u.id
       JOIN convocatorias c ON s.convocatoria_id = c.id
       JOIN sedes se ON s.sede_id = se.id
+      LEFT JOIN asignacion_evaluaciones asig ON s.id = asig.solicitud_id
+      LEFT JOIN usuarios uev ON asig.evaluador_id = uev.id
     `;
     const [rows] = await db.query(query);
     return rows;
@@ -19,15 +39,38 @@ const Solicitud = {
 
   getById: async (id) => {
     const query = `
-      SELECT s.id, s.usuario_id, s.convocatoria_id, s.sede_id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
-             s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
-             u.nombre_completo AS profesor,
+      SELECT s.id, 
+             s.usuario_id, 
+             s.convocatoria_id, 
+             s.sede_id, 
+             s.num_solicitud AS codigoPropuesta, 
+             s.titulo_propuesta, 
+             s.observaciones, 
+             s.estado, 
+             s.motivo_decision, 
+             s.presupuesto_url AS presupuesto, 
+             s.cronograma_url AS cronograma, 
+             s.honestidad_url AS honestidad, 
+             s.id_url AS id_documento, 
+             s.doc_par_1, 
+             s.doc_par_2, 
+             s.created_at AS fecha_radicacion,
+             u.nombre_completo AS docente_nombre,
+             u.email AS docente_correo,
              c.titulo AS convocatoria,
-             se.nombre_sede AS sede
+             se.nombre_sede AS nombre_sede,
+             se.id AS sede,
+             asig.evaluador_id AS evaluador_id,
+             uev.nombre_completo AS evaluador_nombre,
+             asig.puntaje AS evaluacion_puntaje,
+             asig.comentarios AS evaluacion_comentarios,
+             asig.estado_evaluacion AS evaluacion_estado
       FROM solicitudes s
       JOIN usuarios u ON s.usuario_id = u.id
       JOIN convocatorias c ON s.convocatoria_id = c.id
       JOIN sedes se ON s.sede_id = se.id
+      LEFT JOIN asignacion_evaluaciones asig ON s.id = asig.solicitud_id
+      LEFT JOIN usuarios uev ON asig.evaluador_id = uev.id
       WHERE s.id = ?
     `;
     const [rows] = await db.query(query, [id]);
@@ -36,10 +79,22 @@ const Solicitud = {
 
   getByUserId: async (usuarioId) => {
     const query = `
-      SELECT s.id, s.num_solicitud, s.titulo_propuesta, s.observaciones, s.estado, s.motivo_decision, 
-             s.presupuesto_url, s.cronograma_url, s.honestidad_url, s.id_url, s.doc_par_1, s.doc_par_2, s.created_at,
+      SELECT s.id, 
+             s.num_solicitud AS codigoPropuesta, 
+             s.titulo_propuesta, 
+             s.observaciones, 
+             s.estado, 
+             s.motivo_decision, 
+             s.presupuesto_url AS presupuesto, 
+             s.cronograma_url AS cronograma, 
+             s.honestidad_url AS honestidad, 
+             s.id_url AS id_documento, 
+             s.doc_par_1, 
+             s.doc_par_2, 
+             s.created_at AS fecha_radicacion,
              c.titulo AS convocatoria,
-             se.nombre_sede AS sede
+             se.nombre_sede AS nombre_sede,
+             se.id AS sede
       FROM solicitudes s
       JOIN convocatorias c ON s.convocatoria_id = c.id
       JOIN sedes se ON s.sede_id = se.id

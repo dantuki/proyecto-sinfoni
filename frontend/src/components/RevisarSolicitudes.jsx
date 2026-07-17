@@ -3,21 +3,18 @@ import axios from 'axios';
 
 const API_BASE = 'http://localhost:5000/api';
 
-// Subcomponente premium para manejar el estado independiente de cada solicitud en la tabla
 function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, onActualizarEstado, onAsignarEvaluador }) {
   const [nuevoEstado, setNuevoEstado] = useState(sol.estado);
   const [motivo, setMotivo] = useState(sol.motivo_decision || '');
   const [mostrarMotivoInput, setMostrarMotivoInput] = useState(sol.estado === 'Rechazado');
-  const [mostrarEvaluadorInput, setMostrarEvaluadorInput] = useState(sol.estado === 'En Evaluación');
+  const [mostrarEvaluadorInput, setMostrarEvaluadorInput] = useState(false); // Por defecto cerrado
   const [evaluadorSeleccionado, setEvaluadorSeleccionado] = useState(sol.evaluador_id || '');
   const [enviando, setEnviando] = useState(false);
 
-  // Sincronizar el componente hijo con nuevas cargas desde la base de datos
   useEffect(() => {
     setNuevoEstado(sol.estado);
     setMotivo(sol.motivo_decision || '');
     setMostrarMotivoInput(sol.estado === 'Rechazado');
-    setMostrarEvaluadorInput(sol.estado === 'En Evaluación');
     setEvaluadorSeleccionado(sol.evaluador_id || '');
   }, [sol]);
 
@@ -34,7 +31,6 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
     } else {
       setMostrarMotivoInput(false);
       setMostrarEvaluadorInput(false);
-      // Actualizamos automáticamente si el nuevo estado no es un Rechazo ni una Evaluación pendiente de asignar
       await guardarCambioEstado(estadoSeleccionado, null);
     }
   };
@@ -66,7 +62,6 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
       alert(err.response?.data?.message || "Ocurrió un error al actualizar el estado.");
       setNuevoEstado(sol.estado);
       setMostrarMotivoInput(sol.estado === 'Rechazado');
-      setMostrarEvaluadorInput(sol.estado === 'En Evaluación');
     } finally {
       setEnviando(false);
     }
@@ -89,7 +84,6 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       
-      // Enviamos la petición para guardar la asignación del evaluador en la base de datos
       const respuesta = await axios.post(`${API_BASE}/asignacion`, {
         postulacionId: sol.id,
         evaluadorId: parseInt(evaluadorSeleccionado)
@@ -98,10 +92,12 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
       });
 
       if (respuesta.data.status === 'success') {
-        // Ejecutamos la actualización de estado a 'En Evaluación'
-        await guardarCambioEstado('En Evaluación', null);
+        if (sol.estado !== 'En Evaluación') {
+          await guardarCambioEstado('En Evaluación', null);
+        }
         onAsignarEvaluador(sol.id, evaluadorSeleccionado);
-        alert("Evaluador asignado y propuesta puesta en evaluación.");
+        alert("Evaluador asignado correctamente.");
+        setMostrarEvaluadorInput(false);
       } else {
         alert("No se pudo completar la asignación del evaluador.");
       }
@@ -117,7 +113,7 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
     <tr className="hover:bg-slate-50/40 transition-colors group">
       <td className="py-5 px-6 max-w-xs">
         <span className="inline-block px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200/50 mb-1.5">
-          {sol.codigoPropuesta}
+          {sol.codigoPropuesta || 'SIN CÓDIGO'}
         </span>
         <h3 className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-[#5B9BD5] transition-colors">
           {sol.titulo_propuesta}
@@ -194,7 +190,16 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
             <option value="Rechazado">❌ Rechazado</option>
           </select>
 
-          {/* Selector condicional para asignar Evaluador Docente */}
+          {/* Botón premium de despliegue dinámico independiente */}
+          <button
+            type="button"
+            onClick={() => setMostrarEvaluadorInput(!mostrarEvaluadorInput)}
+            className="w-full py-1.5 px-3 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-[#5B9BD5] border border-slate-200 hover:border-[#5B9BD5]/20 rounded-xl text-[10px] font-extrabold transition-all flex items-center justify-center gap-1 cursor-pointer"
+          >
+            {sol.evaluador_id ? '👥 Cambiar Evaluador' : '👥 Asignar Evaluador'}
+          </button>
+
+          {/* Selector condicional para asignar Evaluador */}
           {mostrarEvaluadorInput && (
             <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-xl space-y-2 mt-1">
               <label className="block text-[9px] uppercase font-extrabold text-amber-800 tracking-wider">
@@ -223,7 +228,7 @@ function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, o
             </div>
           )}
 
-          {/* Formulario Inline Condicional para exigir la justificación */}
+          {/* Formulario Inline para rechazo */}
           {mostrarMotivoInput && (
             <div className="bg-red-50/50 border border-red-100 p-3 rounded-xl space-y-2 mt-1">
               <label className="block text-[9px] uppercase font-extrabold text-red-700 tracking-wider">
@@ -271,7 +276,6 @@ function RevisarSolicitudes({ usuario }) {
       setError(null);
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
 
-      // 1. Obtener listado de postulaciones
       const respuestaPost = await axios.get(`${API_BASE}/postulaciones`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -283,7 +287,6 @@ function RevisarSolicitudes({ usuario }) {
         throw new Error(respuestaPost.data.message || 'Error al obtener solicitudes.');
       }
 
-      // 2. Obtener listado de Evaluadores disponibles
       const respuestaEv = await axios.get(`${API_BASE}/usuarios/evaluadores`, {
         headers: { Authorization: `Bearer ${token}` }
       });
