@@ -8,6 +8,7 @@ import ConvocatoriasAbiertas from "./components/ConvocatoriasAbiertas";
 import CrearConvocatoria from "./components/CrearConvocatoria";
 import MisSolicitudes from "./components/MisSolicitudes";
 import RevisarSolicitudes from "./components/RevisarSolicitudes";
+import EvaluarPropuestas from "./components/EvaluarPropuestas"; // IMPORTACIÓN AGREGADA
 
 const ControlUsuarios = () => {
   return (
@@ -25,13 +26,10 @@ function App() {
 
   const vistaActual = historial[historial.length - 1] || 'inicio';
 
-  // CAMBIO AQUÍ: Función dedicada para cerrar sesión de manera segura limpiando el storage
   const handleLogout = () => {
-    // Limpiamos sessionStorage (nuevo sistema)
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('userId');
 
-    // Limpiamos localStorage por si quedó basura de antes
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
 
@@ -102,6 +100,8 @@ function App() {
         );
       case 'revisar_solicitudes':
         return <RevisarSolicitudes usuario={usuario} />;
+      case 'evaluar_propuestas': // CASO AGREGADO PARA EL EVALUADOR
+        return <EvaluarPropuestas usuario={usuario} />;
       case 'control_usuarios': 
         return <ControlUsuarios />;
       default: 
@@ -149,6 +149,16 @@ function App() {
             </button>
           )}
 
+          {/* BOTÓN CONDICIONAL PARA EL EVALUADOR */}
+          {usuario.rol === 'Evaluador' && (
+            <button 
+              onClick={() => cambiarVistaLimpia('evaluar_propuestas')} 
+              className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
+            >
+              <span>📝</span> Evaluar Propuestas
+            </button>
+          )}
+
           {usuario.rol === 'Admin' && (
             <>
               <button 
@@ -191,7 +201,6 @@ function App() {
               Usuario: <strong className="text-slate-900 font-bold">{usuario.nombre_completo}</strong>
             </span>
           </div>
-          {/* CAMBIO AQUÍ: Llamamos a la función handleLogout */}
           <button 
             onClick={handleLogout} 
             className="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-full font-semibold transition-colors"

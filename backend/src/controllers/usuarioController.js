@@ -10,6 +10,17 @@ const getUsuarios = async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 };
 
+// NUEVO ENDPOINT: Obtener únicamente usuarios con rol evaluador
+const getEvaluadores = async (req, res) => {
+  try {
+    // Si tu usuarioModel tiene un query genérico, o podemos llamar a uno personalizado:
+    const data = await Usuario.getByRol('Evaluador'); 
+    res.json({ status: "success", data });
+  } catch (e) { 
+    res.status(500).json({ error: e.message }); 
+  }
+};
+
 const getUsuarioById = async (req, res) => {
   try {
     const data = await Usuario.getById(req.params.id);
@@ -71,7 +82,6 @@ const updateUsuario = async (req, res) => {
       await Usuario.update(id, updateData);
     }
 
-    // Buscamos el registro real final para asegurar consistencia absoluta de URLs
     const usuarioFinal = await Usuario.getById(id);
 
     res.json({ 
@@ -100,6 +110,7 @@ const limpiarTablaDesarrollo = async (req, res) => {
 
 module.exports = { 
   getUsuarios, 
+  getEvaluadores, // Exportado para agregarse a las rutas de usuarios
   getUsuarioById, 
   registrarUsuario, 
   updateUsuario, 

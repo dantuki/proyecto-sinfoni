@@ -4,10 +4,12 @@ import axios from 'axios';
 const API_BASE = 'http://localhost:5000/api';
 
 // Subcomponente premium para manejar el estado independiente de cada solicitud en la tabla
-function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEstado }) {
+function FilaSolicitud({ sol, evaluadores, descargarDocumento, getBadgeStyles, onActualizarEstado, onAsignarEvaluador }) {
   const [nuevoEstado, setNuevoEstado] = useState(sol.estado);
   const [motivo, setMotivo] = useState(sol.motivo_decision || '');
   const [mostrarMotivoInput, setMostrarMotivoInput] = useState(sol.estado === 'Rechazado');
+  const [mostrarEvaluadorInput, setMostrarEvaluadorInput] = useState(sol.estado === 'En Evaluación');
+  const [evaluadorSeleccionado, setEvaluadorSeleccionado] = useState(sol.evaluador_id || '');
   const [enviando, setEnviando] = useState(false);
 
   // Sincronizar el componente hijo con nuevas cargas desde la base de datos
@@ -15,6 +17,8 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
     setNuevoEstado(sol.estado);
     setMotivo(sol.motivo_decision || '');
     setMostrarMotivoInput(sol.estado === 'Rechazado');
+    setMostrarEvaluadorInput(sol.estado === 'En Evaluación');
+    setEvaluadorSeleccionado(sol.evaluador_id || '');
   }, [sol]);
 
   const handleEstadoChange = async (e) => {
@@ -23,9 +27,14 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
     
     if (estadoSeleccionado === 'Rechazado') {
       setMostrarMotivoInput(true);
+      setMostrarEvaluadorInput(false);
+    } else if (estadoSeleccionado === 'En Evaluación') {
+      setMostrarEvaluadorInput(true);
+      setMostrarMotivoInput(false);
     } else {
       setMostrarMotivoInput(false);
-      // Actualizamos automáticamente si el nuevo estado no es un Rechazo
+      setMostrarEvaluadorInput(false);
+      // Actualizamos automáticamente si el nuevo estado no es un Rechazo ni una Evaluación pendiente de asignar
       await guardarCambioEstado(estadoSeleccionado, null);
     }
   };
@@ -33,7 +42,6 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
   const guardarCambioEstado = async (estadoDestino, motivoTexto) => {
     setEnviando(true);
     try {
-      // CORRECCIÓN DE SESIÓN: Lectura de token redundante
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       
       const respuesta = await axios.put(`${API_BASE}/postulaciones/${sol.id}/estado`, {
@@ -56,9 +64,9 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
     } catch (err) {
       console.error("Error al actualizar estado:", err);
       alert(err.response?.data?.message || "Ocurrió un error al actualizar el estado.");
-      // En caso de error de red o servidor, revertimos al estado original
       setNuevoEstado(sol.estado);
       setMostrarMotivoInput(sol.estado === 'Rechazado');
+      setMostrarEvaluadorInput(sol.estado === 'En Evaluación');
     } finally {
       setEnviando(false);
     }
@@ -70,6 +78,39 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
       return;
     }
     await guardarCambioEstado('Rechazado', motivo);
+  };
+
+  const handleConfirmarAsignacion = async () => {
+    if (!evaluadorSeleccionado) {
+      alert("Error: Debes seleccionar un evaluador de la lista.");
+      return;
+    }
+    setEnviando(true);
+    try {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      
+      // Enviamos la petición para guardar la asignación del evaluador en la base de datos
+      const respuesta = await axios.post(`${API_BASE}/asignacion`, {
+        postulacionId: sol.id,
+        evaluadorId: parseInt(evaluadorSeleccionado)
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (respuesta.data.status === 'success') {
+        // Ejecutamos la actualización de estado a 'En Evaluación'
+        await guardarCambioEstado('En Evaluación', null);
+        onAsignarEvaluador(sol.id, evaluadorSeleccionado);
+        alert("Evaluador asignado y propuesta puesta en evaluación.");
+      } else {
+        alert("No se pudo completar la asignación del evaluador.");
+      }
+    } catch (err) {
+      console.error("Error al asignar evaluador:", err);
+      alert(err.response?.data?.message || "Ocurrió un error al asignar el evaluador.");
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -86,10 +127,14 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
             Nota: "{sol.observaciones}"
           </p>
         )}
-        {/* Mostrar permanentemente el motivo si la propuesta ya está rechazada y tiene feedback */}
         {sol.estado === 'Rechazado' && sol.motivo_decision && !mostrarMotivoInput && (
           <div className="mt-2 p-2 bg-red-50/60 border border-red-100/50 rounded-xl text-[11px] text-red-700 leading-relaxed">
             <strong>Motivo registrado:</strong> {sol.motivo_decision}
+          </div>
+        )}
+        {sol.evaluador_nombre && (
+          <div className="mt-2 p-2 bg-blue-50/60 border border-blue-100/50 rounded-xl text-[11px] text-blue-700 leading-relaxed">
+            <strong>Evaluador asignado:</strong> {sol.evaluador_nombre}
           </div>
         )}
       </td>
@@ -149,6 +194,35 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
             <option value="Rechazado">❌ Rechazado</option>
           </select>
 
+          {/* Selector condicional para asignar Evaluador Docente */}
+          {mostrarEvaluadorInput && (
+            <div className="bg-amber-50/50 border border-amber-100 p-3 rounded-xl space-y-2 mt-1">
+              <label className="block text-[9px] uppercase font-extrabold text-amber-800 tracking-wider">
+                Seleccionar Evaluador *
+              </label>
+              <select
+                value={evaluadorSeleccionado}
+                onChange={(e) => setEvaluadorSeleccionado(e.target.value)}
+                disabled={enviando}
+                className="w-full p-2 border border-amber-200 rounded-lg text-[11px] focus:ring-2 focus:ring-amber-200 outline-none bg-white text-slate-700 font-medium"
+              >
+                <option value="">-- Elige un docente --</option>
+                {evaluadores.map((ev) => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.nombre_completo} ({ev.correo})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleConfirmarAsignacion}
+                disabled={enviando || !evaluadorSeleccionado}
+                className="w-full py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+              >
+                {enviando ? 'Asignando...' : 'Confirmar Asignación'}
+              </button>
+            </div>
+          )}
+
           {/* Formulario Inline Condicional para exigir la justificación */}
           {mostrarMotivoInput && (
             <div className="bg-red-50/50 border border-red-100 p-3 rounded-xl space-y-2 mt-1">
@@ -185,31 +259,40 @@ function FilaSolicitud({ sol, descargarDocumento, getBadgeStyles, onActualizarEs
 
 function RevisarSolicitudes({ usuario }) {
   const [solicitudes, setSolicitudes] = useState([]);
+  const [evaluadores, setEvaluadores] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('Todos');
 
-  const obtenerSolicitudes = async () => {
+  const obtenerDatos = async () => {
     try {
       setCargando(true);
       setError(null);
-      
-      // CORRECCIÓN DE SESIÓN: Buscar token en ambos almacenes para evitar pérdida en pestañas inactivas
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      
-      const respuesta = await axios.get(`${API_BASE}/postulaciones`, {
+
+      // 1. Obtener listado de postulaciones
+      const respuestaPost = await axios.get(`${API_BASE}/postulaciones`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (respuesta.data.status === 'success') {
-        const listado = Array.isArray(respuesta.data.data) ? respuesta.data.data : respuesta.data.data?.postulaciones || [];
+      if (respuestaPost.data.status === 'success') {
+        const listado = Array.isArray(respuestaPost.data.data) ? respuestaPost.data.data : respuestaPost.data.data?.postulaciones || [];
         setSolicitudes(listado);
       } else {
-        throw new Error(respuesta.data.message || 'Error al obtener solicitudes.');
+        throw new Error(respuestaPost.data.message || 'Error al obtener solicitudes.');
+      }
+
+      // 2. Obtener listado de Evaluadores disponibles
+      const respuestaEv = await axios.get(`${API_BASE}/usuarios/evaluadores`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (respuestaEv.data.status === 'success') {
+        setEvaluadores(respuestaEv.data.data || []);
       }
     } catch (err) {
-      console.error("Error al cargar postulaciones:", err);
+      console.error("Error al cargar datos en panel de revisión:", err);
       setError(err.response?.data?.message || err.message);
     } finally {
       setCargando(false);
@@ -217,7 +300,7 @@ function RevisarSolicitudes({ usuario }) {
   };
 
   useEffect(() => {
-    obtenerSolicitudes();
+    obtenerDatos();
   }, []);
 
   const descargarDocumento = (nombreArchivo) => {
@@ -226,31 +309,35 @@ function RevisarSolicitudes({ usuario }) {
       return;
     }
 
-    // Si ya viene con protocolo http/https, lo abrimos directamente
     if (nombreArchivo.startsWith('http')) {
       window.open(nombreArchivo, '_blank');
       return;
     }
 
-    // 1. Limpiamos cualquier barra diagonal '/' redundante al inicio
     let nombreLimpio = nombreArchivo.replace(/^\/+/, '');
 
-    // 2. Si el archivo ya empieza con 'uploads/', lo removemos temporalmente
-    // para evitar que se duplique al concatenarlo con la URL del servidor
     if (nombreLimpio.startsWith('uploads/')) {
       nombreLimpio = nombreLimpio.replace(/^uploads\//, '');
     }
 
-    // 3. Generamos la URL limpia y unificada
     const urlCompleta = `http://localhost:5000/uploads/${nombreLimpio}`;
-    
     window.open(urlCompleta, '_blank');
   };
 
-  // Función callback para sincronizar la actualización del estado de una fila con el estado de la lista global
   const handleActualizarEstadoLocal = (id, nuevoEstado, motivoDecision) => {
     setSolicitudes(prev => 
       prev.map(sol => sol.id === id ? { ...sol, estado: nuevoEstado, motivo_decision: motivoDecision } : sol)
+    );
+  };
+
+  const handleAsignarEvaluadorLocal = (id, evaluadorId) => {
+    const evaluadorEncontrado = evaluadores.find(ev => ev.id === parseInt(evaluadorId));
+    setSolicitudes(prev => 
+      prev.map(sol => sol.id === id ? { 
+        ...sol, 
+        evaluador_id: evaluadorId, 
+        evaluador_nombre: evaluadorEncontrado ? evaluadorEncontrado.nombre_completo : 'Evaluador asignado' 
+      } : sol)
     );
   };
 
@@ -282,7 +369,6 @@ function RevisarSolicitudes({ usuario }) {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-2">
-      {/* Encabezado Principal */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200 pb-5 mb-8 gap-4">
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-[#5B9BD5]/10 text-[#5B9BD5] mb-2 uppercase tracking-wide">
@@ -294,14 +380,13 @@ function RevisarSolicitudes({ usuario }) {
           </p>
         </div>
         <button 
-          onClick={obtenerSolicitudes}
+          onClick={obtenerDatos}
           className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-[#5B9BD5] bg-white border border-slate-200 hover:border-[#5B9BD5]/30 rounded-xl transition-all shadow-sm flex items-center gap-2"
         >
           🔄 Sincronizar Bandeja
         </button>
       </div>
 
-      {/* Filtros y Buscador Premium */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="md:col-span-2 relative">
           <input
@@ -329,7 +414,6 @@ function RevisarSolicitudes({ usuario }) {
         </div>
       </div>
 
-      {/* Estados del Contenido */}
       {cargando ? (
         <div className="bg-white p-16 rounded-3xl shadow-sm border border-slate-100 text-center">
           <div className="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-[#5B9BD5] rounded-full" role="status">
@@ -350,7 +434,6 @@ function RevisarSolicitudes({ usuario }) {
           <p className="text-slate-400 text-sm mt-1">No hay solicitudes que coincidan con los filtros aplicados.</p>
         </div>
       ) : (
-        /* Tabla Principal Premium */
         <div className="bg-white rounded-3xl shadow-md border border-slate-100/80 overflow-hidden transition-all">
           <div className="overflow-x-auto">
             <table className="w-full table-auto border-collapse text-left">
@@ -367,9 +450,11 @@ function RevisarSolicitudes({ usuario }) {
                   <FilaSolicitud
                     key={sol.id}
                     sol={sol}
+                    evaluadores={evaluadores}
                     descargarDocumento={descargarDocumento}
                     getBadgeStyles={getBadgeStyles}
                     onActualizarEstado={handleActualizarEstadoLocal}
+                    onAsignarEvaluador={handleAsignarEvaluadorLocal}
                   />
                 ))}
               </tbody>
