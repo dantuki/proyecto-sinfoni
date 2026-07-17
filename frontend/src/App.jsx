@@ -10,16 +10,8 @@ import MisSolicitudes from "./components/MisSolicitudes";
 import RevisarSolicitudes from "./components/RevisarSolicitudes";
 import EvaluarPropuestas from "./components/EvaluarPropuestas";
 import Calificaciones from "./components/Calificaciones";
-import Chat from "./components/Chat"; // NUEVO: Importación del sistema de Chat en tiempo real
-
-const ControlUsuarios = () => {
-  return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-4xl mx-auto">
-      <h2 className="text-xl font-bold text-slate-800 mb-4">Control de Usuarios</h2>
-      <p className="text-slate-500">Módulo administrative para la gestión de roles, accesos y usuarios del sistema SINFONI.</p>
-    </div>
-  );
-};
+import Chat from "./components/Chat";
+import ControlUsuarios from "./components/ControlUsuarios.jsx"; // CORRECCIÓN: Extensión explícita para asegurar la compilación en Vite
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -104,7 +96,7 @@ function App() {
         return <EvaluarPropuestas usuario={usuario} />;
       case 'calificaciones': 
         return <Calificaciones usuario={usuario} />;
-      case 'chat': // NUEVO: Caso del enrutador interno para renderizar el chat
+      case 'chat': 
         return <Chat usuario={usuario} />;
       case 'control_usuarios': 
         return <ControlUsuarios />;
@@ -162,10 +154,9 @@ function App() {
             </button>
           )}
 
-          {/* NUEVO: Botón de Chat visible de forma dinámica para Admins y Evaluadores */}
           {(usuario.rol === 'Admin' || usuario.rol === 'Evaluador') && (
             <button 
-              onClick={() => cambiarVistaLimpia('chat')} 
+              onClick={() => cambiarVistaLimpia('chat')} // CORRECCIÓN: Se cambió 'cambiarVistaLinter' por la función real 'cambiarVistaLimpia'
               className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
             >
               <span>💬</span> Chat Interno
