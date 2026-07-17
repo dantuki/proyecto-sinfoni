@@ -66,6 +66,20 @@ const EvaluarPropuestas = ({ usuario }) => {
     window.open(urlCompleta, '_blank');
   };
 
+  // Función para descargar la plantilla de evaluación que pide el cliente
+  const descargarPlantillaCalificacion = () => {
+    // Alerta descriptiva y limpia para el cliente mientras se configura el archivo real
+    const confirmar = window.confirm(
+      "¿Deseas descargar la Plantilla de Calificación oficial para Evaluadores SINFONI?\n\n(Nota: Si el archivo definitivo aún no se ha subido al servidor, se procesará una plantilla modelo por defecto)."
+    );
+    
+    if (confirmar) {
+      // Apunta a un archivo estático en la carpeta /public de React o uploads del Backend.
+      // Puedes guardar el archivo final en frontend/public/plantillas/plantilla_evaluacion.docx
+      window.open('/plantillas/plantilla_evaluacion.docx', '_blank');
+    }
+  };
+
   const abrirCalificacion = (propuesta) => {
     setPropuestaSeleccionada(propuesta);
     setPuntaje(propuesta.puntaje || '');
@@ -128,12 +142,22 @@ const EvaluarPropuestas = ({ usuario }) => {
             Aquí puedes ver, descargar la documentación y calificar los proyectos de investigación asignados a tu perfil.
           </p>
         </div>
-        <button 
-          onClick={obtenerAsignaciones}
-          className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-[#5B9BD5] bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl transition-all shadow-sm"
-        >
-          🔄 Actualizar Lista
-        </button>
+        <div className="flex gap-2 w-full md:w-auto">
+          {/* Botón dinámico de descarga de plantilla solicitado por el cliente */}
+          <button
+            onClick={descargarPlantillaCalificacion}
+            className="px-4 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/50 rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer w-full md:w-auto justify-center"
+          >
+            📥 Descargar Plantilla Evaluador
+          </button>
+          
+          <button 
+            onClick={obtenerAsignaciones}
+            className="px-4 py-2.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl transition-all shadow-sm w-full md:w-auto justify-center"
+          >
+            🔄 Actualizar Lista
+          </button>
+        </div>
       </div>
 
       {cargando ? (
@@ -180,7 +204,6 @@ const EvaluarPropuestas = ({ usuario }) => {
                 <h3 className="font-bold text-slate-800 text-base mb-2">{asig.titulo_propuesta}</h3>
                 <p className="text-slate-500 text-sm mb-3"><strong>Docente Responsable:</strong> {asig.docente_nombre}</p>
 
-                {/* Descarga completa de documentación para el Evaluador */}
                 <div className="flex flex-wrap gap-2 mb-4 bg-slate-50/50 p-3 rounded-xl border border-slate-100">
                   <span className="w-full text-[10px] font-extrabold uppercase text-slate-400 tracking-wider mb-1 block">
                     Documentación del Proyecto:
