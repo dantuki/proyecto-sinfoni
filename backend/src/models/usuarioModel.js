@@ -24,6 +24,26 @@ const Usuario = {
     return rows;
   },
 
+  // NUEVO MÉTODO: Trae contactos específicos para el Chat según el rol del usuario
+  getChatContacts: async (rol) => {
+    let query = '';
+    const rolLimpio = rol ? rol.toLowerCase() : '';
+    
+    if (rolLimpio === 'admin') {
+      // El Administrador chatea con los Evaluadores
+      query = "SELECT id, nombre_completo, email, rol, foto_url FROM usuarios WHERE LOWER(rol) = 'evaluador'";
+    } else if (rolLimpio === 'evaluador') {
+      // El Evaluador ve y le escribe al Administrador
+      query = "SELECT id, nombre_completo, email, rol, foto_url FROM usuarios WHERE LOWER(rol) = 'admin'";
+    } else {
+      // Caso genérico preventivo de seguridad
+      query = "SELECT id, nombre_completo, email, rol, foto_url FROM usuarios WHERE LOWER(rol) = 'admin'";
+    }
+
+    const [rows] = await db.query(query);
+    return rows;
+  },
+
   create: async (data) => {
     const [result] = await db.query(
       'INSERT INTO usuarios (cedula, nombre_completo, email, password, rol, telefono, direccion, foto_url, nivel_educativo, carrera_titulo, certificado_url, fecha_nacimiento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
