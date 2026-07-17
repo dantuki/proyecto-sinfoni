@@ -118,7 +118,7 @@ function App() {
           className="p-6 bg-white border-b border-slate-200 text-center cursor-pointer" 
           onClick={() => cambiarVistaLimpia('inicio')}
         >
-          <h1 className="text-2xl font-extrabold tracking-tight text-[#5B9BD5]">SINFONI</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight text-[#5B9BD5]">ArchiveX</h1>
         </div>
 
         <nav className="flex-1 py-4 space-y-1">

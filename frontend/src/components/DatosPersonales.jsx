@@ -133,7 +133,7 @@ export default function DatosPersonales({ usuario }) {
         }
       }
 
-      setMensajeExito('¡Perfil SINFONI actualizado con éxito!');
+      setMensajeExito('¡Perfil  actualizado con éxito!');
       setIsEditing(false);
       setArchivoFoto(null);
       setArchivoCertificado(null);
@@ -192,7 +192,7 @@ export default function DatosPersonales({ usuario }) {
             ) : fotoUrl ? (
               <img 
                 src={`http://localhost:5000${fotoUrl}`} 
-                alt="Perfil SINFONI" 
+                alt="Perfil ArchiveX" 
                 className="w-full h-full object-cover rounded-xl border-4 border-slate-100 shadow-sm"
                 onError={(e) => {
                   e.target.src = "https://via.placeholder.com/150";
@@ -417,7 +417,7 @@ export default function DatosPersonales({ usuario }) {
                 onClick={() => setIsEditing(true)}
                 className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-sm"
               >
-                Modificar Datos SINFONI
+                Modificar Datos ArchiveX
               </button>
             )}
           </div>

@@ -6,7 +6,7 @@ const http = require('http'); // Servidor HTTP nativo requerido para WebSockets
 const { Server } = require('socket.io'); // Instancia del servidor de Socket.io
 const Usuario = require('./models/usuarioModel'); // Modelo para consultar contactos
 
-// IMPORTACIÓN DE RUTAS (SINFONI Limpio)
+// IMPORTACIÓN DE RUTAS (ArchiveX Limpio)
 const SedeRoutes = require('./routes/sedeRoutes');
 const usuarioRoutes = require('./routes/usuarioRoutes');
 const convocatoriaRoutes = require('./routes/convocatoriaRoutes');
@@ -86,7 +86,7 @@ app.use((err, req, res, next) => {
 });
 
 app.get('/', (req, res) => {
-  res.json({ mensaje: "API de SINFONI operativa con WebSockets", estado: "Limpio" });
+  res.json({ mensaje: "API de ArchiveX operativa con WebSockets", estado: "Limpio" });
 });
 
 // --- LÓGICA DE WEBSOCKETS (SOCKET.IO) ---
@@ -178,5 +178,5 @@ io.on('connection', (socket) => {
 // IMPORTANTE: Cambiamos app.listen por server.listen para activar los WebSockets
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Servidor SINFONI híbrido (HTTP + WebSockets) corriendo en puerto ${PORT}`);
+  console.log(`Servidor ArchiveX híbrido (HTTP + WebSockets) corriendo en puerto ${PORT}`);
 });

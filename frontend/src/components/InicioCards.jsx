@@ -44,7 +44,7 @@ const InicioCards = ({ cambiarVista, usuario }) => {
   if (!esEvaluador) {
     categorias.push({
       titulo: 'Noticias',
-      descripcion: 'Entérate de las últimas circulares, avisos y novedades del sistema SINFONI.',
+      descripcion: 'Entérate de las últimas circulares, avisos y novedades del sistema ArchiveX.',
       icono: '📰',
       color: 'from-amber-500 to-orange-600',
       shadowColor: 'hover:shadow-orange-500/20',
@@ -72,10 +72,10 @@ const InicioCards = ({ cambiarVista, usuario }) => {
     <div className="w-full max-w-6xl mx-auto px-4 py-6">
       <div className="text-center mb-12">
         <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#5B9BD5]/10 text-[#5B9BD5] mb-4">
-          ✨ Sistema Integrado SINFONI
+          ✨ Sistema Integrado ArchiveX
         </span>
         <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight sm:text-4xl bg-gradient-to-r from-slate-800 to-slate-900 bg-clip-text text-transparent">
-          Panel de Control SINFONI
+          Panel de Control ArchiveX
         </h1>
         <p className="mt-3 max-w-2xl mx-auto text-base text-slate-500">
           Bienvenido, <span className="font-semibold text-slate-700">{usuario?.nombre_completo || 'Usuario'}</span> ({usuario?.rol || 'Rol'}). Selecciona un módulo para gestionar tus procesos académicos y de investigación.

@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS sinfoni_db;
-USE sinfoni_db;
+CREATE DATABASE IF NOT EXISTS archivex_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE archivex_db;
 
 -- ========================================================
 -- LIMPIEZA DE TABLAS EXISTENTES
@@ -21,7 +21,7 @@ DROP TABLE IF EXISTS sedes;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ========================================================
--- CREACIÓN DE ESTRUCTURAS LIMPIAS Y OPTIMIZADAS
+-- CREACIÓN DE ESTRUCTURAS - ARCHIVEX
 -- ========================================================
 
 -- 1. TABLA: SEDES
@@ -30,14 +30,14 @@ CREATE TABLE sedes (
   nombre_sede VARCHAR(100) UNIQUE NOT NULL
 );
 
--- 2. TABLA: USUARIOS (Rol corregido a 'Docente' para sincronía con React)
+-- 2. TABLA: USUARIOS
 CREATE TABLE usuarios (
   id INT AUTO_INCREMENT PRIMARY KEY,
   cedula VARCHAR(20) UNIQUE NOT NULL,
   nombre_completo VARCHAR(150) NOT NULL,  
   email VARCHAR(100) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
-  rol ENUM('Admin', 'Docente', 'Evaluador') DEFAULT 'Docente',
+  rol ENUM('Admin', 'Profesor', 'Docente', 'Evaluador') DEFAULT 'Docente',
   telefono VARCHAR(20) NULL,    
   direccion VARCHAR(255) NULL,  
   foto_url VARCHAR(255) NULL,
@@ -65,7 +65,7 @@ CREATE TABLE convocatorias (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. TABLA: SOLICITUDES (Estructura final con URLs de PDFs nativos y estados de SINFONI)
+-- 4. TABLA: SOLICITUDES
 CREATE TABLE solicitudes (
   id INT AUTO_INCREMENT PRIMARY KEY,
   usuario_id INT NOT NULL,
@@ -97,6 +97,7 @@ CREATE TABLE asignacion_evaluaciones (
   puntaje DECIMAL(5,2) DEFAULT 0.00,
   comentarios TEXT NULL,
   estado_evaluacion ENUM('Asignado', 'En Progreso', 'Finalizado') DEFAULT 'Asignado',
+  archivo_evaluacion VARCHAR(255) NULL,
   fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (solicitud_id) REFERENCES solicitudes(id) ON DELETE CASCADE,
   FOREIGN KEY (evaluador_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -151,21 +152,8 @@ CREATE TABLE documentos_solicitud (
 -- PARAMETRIZACIÓN INICIAL REQUERIDA
 -- ========================================================
 INSERT INTO sedes (nombre_sede) VALUES 
-('Apartadó'),
-('Arauca'),
-('Barrancabermeja'),
-('Bogotá'),
-('Bucaramanga'),
-('Cali'),
-('Cartago'),
-('El Espinal'),
-('Ibagué'),
-('Medellín'),
-('Montería'),
-('Neiva'),
-('Pasto'),
-('Pereira'),
-('Popayán'),
-('Quibdó'),
-('Santa Marta'),
-('Villavicencio');
+('Apartadó'), ('Arauca'), ('Barrancabermeja'), ('Bogotá'), 
+('Bucaramanga'), ('Cali'), ('Cartago'), ('El Espinal'), 
+('Ibagué'), ('Medellín'), ('Montería'), ('Neiva'), 
+('Pasto'), ('Pereira'), ('Popayán'), ('Quibdó'), 
+('Santa Marta'), ('Villavicencio');

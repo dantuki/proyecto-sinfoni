@@ -342,7 +342,7 @@ function CrearConvocatoria({ alFinalizar, convocatoriaAEditar }) {
             ? 'Procesando cambios en Base de Datos...' 
             : esEdicion 
               ? 'Guardar Cambios de Convocatoria' 
-              : 'Publicar Convocatoria en SINFONI'}
+              : 'Publicar Convocatoria en Archivex'}
         </button>
       </form>
     </div>

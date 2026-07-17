@@ -17,7 +17,7 @@ const createPostulacion = async (req, res) => {
     }
 
     // El código de propuesta se genera automáticamente si no viene del frontend
-    const finalCodigoPropuesta = codigoPropuesta || `SINFONI-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const finalCodigoPropuesta = codigoPropuesta || `ArchiveX-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     if (!titulo_propuesta || !sede || !convocatoriaId) {
       return res.status(400).json({ 
@@ -175,7 +175,7 @@ const updateEstadoPostulacion = async (req, res) => {
     if (!estado || !estadosValidos.includes(estado)) {
       return res.status(400).json({
         status: "error",
-        message: "El estado proporcionado no es válido para el flujo de evaluación de SINFONI."
+        message: "El estado proporcionado no es válido para el flujo de evaluación de ArchiveX."
       });
     }
 

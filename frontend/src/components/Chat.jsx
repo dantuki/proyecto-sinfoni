@@ -83,7 +83,7 @@ const Chat = ({ usuario }) => {
       <div className="w-1/3 border-r border-slate-100 flex flex-col bg-slate-50/50">
         <div className="p-4 border-b border-slate-100 bg-white">
           <h3 className="font-bold text-slate-800 text-base">Mensajería Interna</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Sistemas de comunicación SINFONI</p>
+          <p className="text-xs text-slate-400 mt-0.5">Sistemas de comunicación ArchiveX</p>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {contactos.length === 0 ? (

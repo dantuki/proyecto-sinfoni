@@ -194,7 +194,7 @@ export default function AuthContainer({ alAutenticar }) {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ejemplo@sinfoni.com"
+                    placeholder="ejemplo@gmail.com"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
                   />
                 </div>
@@ -282,7 +282,7 @@ export default function AuthContainer({ alAutenticar }) {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="ejemplo@sinfoni.com"
+                    placeholder="ejemplo@gmail.com"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-200"
                   />
                 </div>

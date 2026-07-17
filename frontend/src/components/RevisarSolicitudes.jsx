@@ -479,7 +479,7 @@ function RevisarSolicitudes({ usuario }) {
           <div className="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-[#5B9BD5] rounded-full" role="status">
             <span className="sr-only">Cargando...</span>
           </div>
-          <p className="text-slate-500 text-sm font-medium mt-4">Consultando base de datos de SINFONI...</p>
+          <p className="text-slate-500 text-sm font-medium mt-4">Consultando base de datos de ArchiveX...</p>
         </div>
       ) : error ? (
         <div className="bg-red-50/50 p-8 rounded-3xl border border-red-100/60 text-center max-w-md mx-auto animate-fade-in">

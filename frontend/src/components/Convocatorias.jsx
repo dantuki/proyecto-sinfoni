@@ -144,7 +144,7 @@ const Convocatorias = ({ usuario, convocatoria }) => {
       <div>
         <h3 className="text-lg font-bold text-slate-800 mb-1">Radicación de Propuesta</h3>
         <p className="text-slate-400 text-xs mb-6">
-          Sube la documentación reglamentaria requerida en formato PDF. SINFONI enlazará automáticamente tu perfil académico.
+          Sube la documentación reglamentaria requerida en formato PDF. Archivex enlazará automáticamente tu perfil académico.
         </p>
 
         {mensaje.texto && (

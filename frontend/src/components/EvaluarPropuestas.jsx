@@ -69,7 +69,7 @@ const EvaluarPropuestas = ({ usuario }) => {
 
   const descargarPlantillaCalificacion = () => {
     const confirmar = window.confirm(
-      "¿Deseas descargar la Plantilla de Calificación oficial para Evaluadores SINFONI?\n\n(Nota: Si el archivo definitivo aún no se ha subido al servidor, se procesará una plantilla modelo por defecto)."
+      "¿Deseas descargar la Plantilla de Calificación oficial para Evaluadores ArchiveX?\n\n(Nota: Si el archivo definitivo aún no se ha subido al servidor, se procesará una plantilla modelo por defecto)."
     );
     
     if (confirmar) {
