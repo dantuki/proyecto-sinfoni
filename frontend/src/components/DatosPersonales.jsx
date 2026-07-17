@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-export default function DatosPersonales() {
+// CORRECCIÓN: Recibimos la prop 'usuario' de la sesión activa para validar identidades de forma cruzada
+export default function DatosPersonales({ usuario }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,19 +27,23 @@ export default function DatosPersonales() {
   const [archivoCertificado, setArchivoCertificado] = useState(null);
   const [vistaPreviaFoto, setVistaPreviaFoto] = useState('');
 
+  // CORRECCIÓN: Determinamos el ID real activo priorizando el estado global sobre el almacenamiento persistente
+  const idUsuarioActivo = usuario?.id || sessionStorage.getItem('userId') || localStorage.getItem('userId');
+
   useEffect(() => {
     const cargarDatosPerfil = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const storedUserId = localStorage.getItem('userId');
+        setError('');
+        // CORRECCIÓN: Buscamos el token de forma segura en ambos almacenes para evitar desincronizaciones
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
-        if (!token || !storedUserId) {
+        if (!token || !idUsuarioActivo) {
           setError('No hay una sesión activa. Vuelve a iniciar sesión.');
           setLoading(false);
           return;
         }
 
-        const idUsuario = parseInt(storedUserId, 10);
+        const idUsuario = parseInt(idUsuarioActivo, 10);
         setUserId(idUsuario);
 
         const response = await fetch(`http://localhost:5000/api/usuarios/${idUsuario}`, {
@@ -48,25 +53,27 @@ export default function DatosPersonales() {
         const resJson = await response.json();
 
         if (response.ok && resJson && resJson.data) {
-          const usuario = Array.isArray(resJson.data) ? resJson.data[0] : resJson.data;
+          const datosUsuario = Array.isArray(resJson.data) ? resJson.data[0] : resJson.data;
           
-          if (usuario) {
-            setCedula(usuario.cedula || '');
-            setEmail(usuario.email || '');
-            setNombreCompleto(usuario.nombre_completo || '');
-            setTelefono(usuario.telefono || '');
-            setDireccion(usuario.direccion || '');
-            setFotoUrl(usuario.foto_url || '');
-            setNivelEducativo(usuario.nivel_educativo || '');
-            setCarreraTitulo(usuario.carrera_titulo || '');
-            setCertificadoUrl(usuario.certificado_url || '');
+          if (datosUsuario) {
+            setCedula(datosUsuario.cedula || '');
+            setEmail(datosUsuario.email || '');
+            setNombreCompleto(datosUsuario.nombre_completo || '');
+            setTelefono(datosUsuario.telefono || '');
+            setDireccion(datosUsuario.direccion || '');
+            setFotoUrl(datosUsuario.foto_url || '');
+            setNivelEducativo(datosUsuario.nivel_educativo || '');
+            setCarreraTitulo(datosUsuario.carrera_titulo || '');
+            setCertificadoUrl(datosUsuario.certificado_url || '');
             
-            if (usuario.fecha_nacimiento) {
-              setFechaNacimiento(usuario.fecha_nacimiento.split('T')[0]);
+            if (datosUsuario.fecha_nacimiento) {
+              setFechaNacimiento(datosUsuario.fecha_nacimiento.split('T')[0]);
             } else {
               setFechaNacimiento('');
             }
           }
+        } else {
+          setError(resJson.message || 'No se pudo recuperar la información del perfil.');
         }
       } catch (err) {
         setError('Error al conectar con el servidor para traer tu perfil.');
@@ -76,7 +83,7 @@ export default function DatosPersonales() {
     };
 
     cargarDatosPerfil();
-  }, []);
+  }, [idUsuarioActivo]); // CORRECCIÓN: Se dispara automáticamente si cambia el usuario en sesión sin dejar rastro del anterior
 
   const handleCambioFotoLocal = (e) => {
     const file = e.target.files[0];
@@ -89,7 +96,7 @@ export default function DatosPersonales() {
     e.preventDefault();
     setError('');
     setMensajeExito('');
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
     const formData = new FormData();
     formData.append('nombre_completo', nombreCompleto);
@@ -206,7 +213,7 @@ export default function DatosPersonales() {
             )}
           </div>
 
-          {/* ID de Investigador (Nuevo Requerimiento) */}
+          {/* ID de Investigador */}
           <div className="text-center w-full bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100 print:bg-white">
             <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest">ID Investigador </p>
             <p className="text-indigo-700 font-extrabold text-lg">#{userId || '---'}</p>
