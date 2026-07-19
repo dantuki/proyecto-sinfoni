@@ -39,6 +39,14 @@ const createConvocatoria = async (req, res) => {
       return res.status(400).json({ status: "error", message: "Los campos titulo, descripcion, tipo, fecha_inicio y fecha_cierre son obligatorios" });
     }
 
+    if (new Date(fecha_cierre) <= new Date(fecha_inicio)) {
+      return res.status(400).json({ status: "error", message: "La fecha de cierre debe ser posterior a la fecha de inicio" });
+    }
+
+    if (presupuesto_max && Number(presupuesto_max) < 0) {
+      return res.status(400).json({ status: "error", message: "El presupuesto máximo no puede ser un valor negativo" });
+    }
+
     if (!codigo || codigo.trim() === "") {
       codigo = generarCodigoRandom();
     } else {
@@ -76,6 +84,14 @@ const updateConvocatoria = async (req, res) => {
 
     if (!titulo || !descripcion || !tipo || !fecha_inicio || !fecha_cierre) {
       return res.status(400).json({ status: "error", message: "Todos los campos principales son requeridos para actualizar" });
+    }
+
+    if (new Date(fecha_cierre) <= new Date(fecha_inicio)) {
+      return res.status(400).json({ status: "error", message: "La fecha de cierre debe ser posterior a la fecha de inicio" });
+    }
+
+    if (presupuesto_max && Number(presupuesto_max) < 0) {
+      return res.status(400).json({ status: "error", message: "El presupuesto máximo no puede ser un valor negativo" });
     }
 
     if (!codigo || codigo.trim() === "") {
