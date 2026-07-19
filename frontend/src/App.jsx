@@ -12,6 +12,7 @@ import EvaluarPropuestas from "./components/EvaluarPropuestas";
 import Calificaciones from "./components/Calificaciones";
 import Chat from "./components/Chat";
 import ControlUsuarios from "./components/ControlUsuarios.jsx"; // CORRECCIÓN: Extensión explícita para asegurar la compilación en Vite
+import ReportesAdmin from "./components/ReportesAdmin"; // INYECCIÓN: Componente operativo de descargas
 
 function App() {
   const [usuario, setUsuario] = useState(null); 
@@ -100,6 +101,8 @@ function App() {
         return <Chat usuario={usuario} />;
       case 'control_usuarios': 
         return <ControlUsuarios />;
+      case 'reportes_admin': // INYECCIÓN: Caso de renderizado directo
+        return <ReportesAdmin />;
       default: 
         return (
           <div className="bg-white p-8 rounded-2xl shadow-sm text-center max-w-md mx-auto mt-10">
@@ -156,7 +159,7 @@ function App() {
 
           {(usuario.rol === 'Admin' || usuario.rol === 'Evaluador') && (
             <button 
-              onClick={() => cambiarVistaLimpia('chat')} // CORRECCIÓN: Se cambió 'cambiarVistaLinter' por la función real 'cambiarVistaLimpia'
+              onClick={() => cambiarVistaLimpia('chat')} 
               className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
             >
               <span>💬</span> Chat Interno
@@ -191,6 +194,13 @@ function App() {
                 className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3"
               >
                 <span>👥</span> Control Usuarios
+              </button>
+
+              <button 
+                onClick={() => cambiarVistaLimpia('reportes_admin')} // INYECCIÓN: Botón del menú lateral para Reportes
+                className="w-full text-left px-6 py-3 hover:bg-[#5B9BD5] transition-colors flex items-center gap-3 bg-slate-700/40"
+              >
+                <span>📈</span> Informes y Reportes
               </button>
             </>
           )}
