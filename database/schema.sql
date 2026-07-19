@@ -157,3 +157,9 @@ INSERT INTO sedes (nombre_sede) VALUES
 ('Ibagué'), ('Medellín'), ('Montería'), ('Neiva'), 
 ('Pasto'), ('Pereira'), ('Popayán'), ('Quibdó'), 
 ('Santa Marta'), ('Villavicencio');
+
+--⚠️ Recordatorio importante para el Backend
+--Una vez que renombres la base de datos a archivex_db, no olvides ir al archivo de configuración de tu servidor en NodeJS (usualmente el archivo .env o donde configures la conexión de mysql2 / sequelize) y actualizar la credencial:
+
+--Fragmento de código
+--DB_NAME=archivex_db
