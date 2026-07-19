@@ -15,6 +15,7 @@ const asignacionRoutes = require('./routes/asignacionRoutes');
 const authRoutes = require('./routes/authRoutes'); 
 const noticiaRoutes = require('./routes/noticiaRoutes'); 
 const postulacionRoutes = require('./routes/postulacionRoutes');
+const reporteRoutes = require('./routes/reporteRoutes'); // INYECCIÓN: Módulo de reportes profesionales
 
 dotenv.config();
 const app = express();
@@ -74,6 +75,7 @@ app.use('/api/asignacion', asignacionRoutes);
 app.use('/api/auth', authRoutes); 
 app.use('/api/noticias', noticiaRoutes); 
 app.use('/api/postulaciones', postulacionRoutes);
+app.use('/api/reportes', reporteRoutes); // INYECCIÓN: Endpoint central de descargas de ArchiveX
 
 // Manejador global para errores capturados en Express para evitar caídas
 app.use((err, req, res, next) => {
@@ -135,7 +137,7 @@ io.on('connection', (socket) => {
     if (!mensaje || !mensaje.trim()) return;
 
     try {
-      // Guardar mensaje de manera persistente en la BD
+      // Guardar mensaje de manera persistentente en la BD
       const [result] = await db.query(
         'INSERT INTO chat_mensajes (remitente_id, destinatario_id, mensaje) VALUES (?, ?, ?)',
         [remitente_id, destinatario_id, mensaje.trim()]
@@ -175,7 +177,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// IMPORTANTE: Cambiamos app.listen por server.listen para activar los WebSockets
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Servidor ArchiveX híbrido (HTTP + WebSockets) corriendo en puerto ${PORT}`);
