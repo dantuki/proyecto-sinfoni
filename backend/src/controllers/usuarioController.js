@@ -1,7 +1,6 @@
 const Usuario = require('../models/usuarioModel');
 const bcrypt = require('bcrypt'); 
 
-// 1. GET General (Listar todos los usuarios)
 const getUsuarios = async (req, res) => {
   try {
     const usuarios = await Usuario.getAll();
@@ -11,7 +10,6 @@ const getUsuarios = async (req, res) => {
   }
 };
 
-// 2. GET Específico (Buscar por ID)
 const getUsuarioById = async (req, res) => {
   try {
     const usuario = await Usuario.getById(req.params.id);
@@ -24,7 +22,6 @@ const getUsuarioById = async (req, res) => {
   }
 };
 
-// 3. GET Evaluadores (Filtrar solo usuarios con rol Evaluador)
 const getEvaluadores = async (req, res) => {
   try {
     const evaluadores = await Usuario.getEvaluadores();
@@ -34,7 +31,6 @@ const getEvaluadores = async (req, res) => {
   }
 };
 
-// 4. POST (Registrar nuevo usuario)
 const registrarUsuario = async (req, res) => {
   try {
     const { contrasena, ...datosUsuario } = req.body;
@@ -56,17 +52,16 @@ const registrarUsuario = async (req, res) => {
   }
 };
 
-// 5. PUT (Actualizar datos de usuario)
 const updateUsuario = async (req, res) => {
   try {
     const id = req.params.id;
     const datosActualizar = { ...req.body };
 
     if (req.files) {
-      if (req.files['foto']) {
+      if (req.files['foto'] && req.files['foto'][0]) {
         datosActualizar.foto_url = `/uploads/${req.files['foto'][0].filename}`;
       }
-      if (req.files['certificado']) {
+      if (req.files['certificado'] && req.files['certificado'][0]) {
         datosActualizar.certificado_url = `/uploads/${req.files['certificado'][0].filename}`;
       }
     }
@@ -74,6 +69,7 @@ const updateUsuario = async (req, res) => {
     if (datosActualizar.contrasena) {
       const salt = await bcrypt.genSalt(10);
       datosActualizar.password = await bcrypt.hash(datosActualizar.contrasena, salt);
+      delete datosActualizar.contrasena; // Eliminar la clave temporal limpia antes de enviar al Modelo
     }
 
     const affectedRows = await Usuario.update(id, datosActualizar);
@@ -87,7 +83,6 @@ const updateUsuario = async (req, res) => {
   }
 };
 
-// 6. DELETE (Eliminar un usuario)
 const deleteUsuario = async (req, res) => {
   try {
     const affectedRows = await Usuario.delete(req.params.id);
@@ -100,7 +95,6 @@ const deleteUsuario = async (req, res) => {
   }
 };
 
-// 7. DELETE (Limpiar tabla para desarrollo rápido)
 const limpiarTablaDesarrollo = async (req, res) => {
   try {
     await Usuario.truncate(); 
