@@ -72,7 +72,7 @@ exports.getReporteConvocatorias = async (req, res, next) => {
                    SUM(CASE WHEN s.estado = 'Rechazado' THEN 1 ELSE 0 END) as rechazados
             FROM convocatorias c
             LEFT JOIN solicitudes s ON c.id = s.convocatoria_id
-            GROUP BY c.id
+            GROUP BY c.id, c.codigo, c.titulo, c.tipo
             ORDER BY c.created_at DESC;
         `;
         const [rows] = await db.query(query);
@@ -81,31 +81,31 @@ exports.getReporteConvocatorias = async (req, res, next) => {
         const sheet = workbook.addWorksheet('Convocatorias');
 
         const columns = [
-            { header: 'Código', key: 'codigo' },
-            { header: 'Título Convocatoria', key: 'titulo' },
-            { header: 'Tipo', key: 'tipo' },
-            { header: 'Total Proyectos', key: 'total_proyectos' },
-            { header: 'Borradores', key: 'borradores' },
-            { header: 'Radicados', key: 'radicados' },
-            { header: 'En Evaluación', key: 'en_evaluacion' },
-            { header: 'Aprobados', key: 'aprobados' },
-            { header: 'Rechazados', key: 'rechazados' }
+            { header: 'Código' },
+            { header: 'Título Convocatoria' },
+            { header: 'Tipo' },
+            { header: 'Total Proyectos' },
+            { header: 'Borradores' },
+            { header: 'Radicados' },
+            { header: 'En Evaluación' },
+            { header: 'Aprobados' },
+            { header: 'Rechazados' }
         ];
 
         aplicarEstiloEncabezado(sheet, 'REPORTE GENERAL DE CONVOCATORIAS - ARCHIVEX', columns);
 
         rows.forEach(row => {
-            sheet.addRow({
-                codigo: row.codigo,
-                titulo: row.titulo,
-                tipo: row.tipo,
-                total_proyectos: Number(row.total_proyectos),
-                borradores: Number(row.borradores || 0),
-                radicados: Number(row.radicados || 0),
-                en_evaluacion: Number(row.en_evaluacion || 0),
-                aprobados: Number(row.aprobados || 0),
-                rechazados: Number(row.rechazados || 0)
-            });
+            sheet.addRow([
+                row.codigo,
+                row.titulo,
+                row.tipo,
+                Number(row.total_proyectos || 0),
+                Number(row.borradores || 0),
+                Number(row.radicados || 0),
+                Number(row.en_evaluacion || 0),
+                Number(row.aprobados || 0),
+                Number(row.rechazados || 0)
+            ]);
         });
 
         finalizarFormatoTabla(sheet, 4, rows.length, columns.length);
@@ -119,7 +119,7 @@ exports.getReporteConvocatorias = async (req, res, next) => {
     }
 };
 
-// 2. DEMOGRAFÍA POR SEDES (Ej: Conteo estricto Ibagué, Pereira, etc.)
+// 2. DEMOGRAFÍA POR SEDES
 exports.getReporteSedesDemografia = async (req, res, next) => {
     try {
         const query = `
@@ -137,21 +137,21 @@ exports.getReporteSedesDemografia = async (req, res, next) => {
         const sheet = workbook.addWorksheet('Demografía por Sedes');
 
         const columns = [
-            { header: 'Sede Universitaria', key: 'nombre_sede' },
-            { header: 'Título Profesional / Carrera', key: 'carrera_titulo' },
-            { header: 'Nivel Educativo alcanzado', key: 'nivel_educativo' },
-            { header: 'Cantidad de Profesores', key: 'total_profesores' }
+            { header: 'Sede Universitaria' },
+            { header: 'Título Profesional / Carrera' },
+            { header: 'Nivel Educativo alcanzado' },
+            { header: 'Cantidad de Profesores' }
         ];
 
         aplicarEstiloEncabezado(sheet, 'DEMOGRAFÍA ASIGNADA DE PROFESORES POR SEDE', columns);
 
         rows.forEach(row => {
-            sheet.addRow({
-                nombre_sede: row.nombre_sede,
-                carrera_titulo: row.carrera_titulo || 'No registrado',
-                nivel_educativo: row.nivel_educativo || 'No registrado',
-                total_profesores: Number(row.total_profesores)
-            });
+            sheet.addRow([
+                row.nombre_sede,
+                row.carrera_titulo || 'No registrado',
+                row.nivel_educativo || 'No registrado',
+                Number(row.total_profesores || 0)
+            ]);
         });
 
         finalizarFormatoTabla(sheet, 4, rows.length, columns.length);
@@ -178,7 +178,7 @@ exports.getReporteEvaluadores = async (req, res, next) => {
             FROM usuarios u
             LEFT JOIN asignacion_evaluaciones ae ON u.id = ae.evaluador_id
             WHERE u.rol = 'Evaluador'
-            GROUP BY u.id
+            GROUP BY u.id, u.nombre_completo, u.email
             ORDER BY total_asignados DESC;
         `;
         const [rows] = await db.query(query);
@@ -187,27 +187,27 @@ exports.getReporteEvaluadores = async (req, res, next) => {
         const sheet = workbook.addWorksheet('Evaluadores');
 
         const columns = [
-            { header: 'Nombre Evaluador', key: 'evaluador' },
-            { header: 'Correo Electrónico', key: 'email' },
-            { header: 'Total Asignados', key: 'total_asignados' },
-            { header: 'Estado: Asignado', key: 'asignados' },
-            { header: 'Estado: En Progreso', key: 'en_progreso' },
-            { header: 'Estado: Finalizado', key: 'finalizados' },
-            { header: 'Puntaje Promedio Otorgado', key: 'promedio_puntaje' }
+            { header: 'Nombre Evaluador' },
+            { header: 'Correo Electrónico' },
+            { header: 'Total Asignados' },
+            { header: 'Estado: Asignado' },
+            { header: 'Estado: En Progreso' },
+            { header: 'Estado: Finalizado' },
+            { header: 'Puntaje Promedio Otorgado' }
         ];
 
         aplicarEstiloEncabezado(sheet, 'INFORME Y CONTROL DE EVALUADORES - ARCHIVEX', columns);
 
         rows.forEach(row => {
-            sheet.addRow({
-                evaluador: row.evaluador,
-                email: row.email,
-                total_asignados: Number(row.total_asignados),
-                asignados: Number(row.asignados || 0),
-                en_progreso: Number(row.en_progreso || 0),
-                finalizados: Number(row.finalizados || 0),
-                promedio_puntaje: parseFloat(row.promedio_puntaje).toFixed(2)
-            });
+            sheet.addRow([
+                row.evaluador,
+                row.email,
+                Number(row.total_asignados || 0),
+                Number(row.asignados || 0),
+                Number(row.en_progreso || 0),
+                Number(row.finalizados || 0),
+                parseFloat(row.promedio_puntaje || 0).toFixed(2)
+            ]);
         });
 
         finalizarFormatoTabla(sheet, 4, rows.length, columns.length);
@@ -239,27 +239,27 @@ exports.getReporteProyectosTitulos = async (req, res, next) => {
         const sheet = workbook.addWorksheet('Proyectos y Títulos');
 
         const columns = [
-            { header: 'N° Radicado', key: 'num_solicitud' },
-            { header: 'Título de la Propuesta', key: 'titulo_propuesta' },
-            { header: 'Estado Actual', key: 'estado' },
-            { header: 'Docente Investigador', key: 'docente' },
-            { header: 'Nivel Académico', key: 'nivel_educativo' },
-            { header: 'Carrera Profesional', key: 'carrera_titulo' },
-            { header: 'Sede Asociada', key: 'nombre_sede' }
+            { header: 'N° Radicado' },
+            { header: 'Título de la Propuesta' },
+            { header: 'Estado Actual' },
+            { header: 'Docente Investigador' },
+            { header: 'Nivel Académico' },
+            { header: 'Carrera Profesional' },
+            { header: 'Sede Asociada' }
         ];
 
         aplicarEstiloEncabezado(sheet, 'AUDITORÍA CONSOLIDADA DE PROYECTOS Y TÍTULOS', columns);
 
         rows.forEach(row => {
-            sheet.addRow({
-                num_solicitud: row.num_solicitud,
-                titulo_propuesta: row.titulo_propuesta,
-                estado: row.estado,
-                docente: row.docente,
-                nivel_educativo: row.nivel_educativo || 'No especificado',
-                carrera_titulo: row.carrera_titulo || 'No especificado',
-                nombre_sede: row.nombre_sede
-            });
+            sheet.addRow([
+                row.num_solicitud,
+                row.titulo_propuesta,
+                row.estado,
+                row.docente,
+                row.nivel_educativo || 'No especificado',
+                row.carrera_titulo || 'No especificado',
+                row.nombre_sede
+            ]);
         });
 
         finalizarFormatoTabla(sheet, 4, rows.length, columns.length);
